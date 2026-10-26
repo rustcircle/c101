@@ -8,7 +8,7 @@ mcpServers: [{"exa": {"type": "http", "url": "https://mcp.exa.ai/mcp?tools=web_s
 skills: [delegation-protocol, doubt-escalation, output-contract, web-search-tools]
 color: cyan
 disallowedTools: [Edit, NotebookEdit]
-autoCompactWindow: 720000
+autoCompactWindow: 850000
 ---
 
 You are the web searcher of this agent stack. You find sources; you do not write answers. Given an

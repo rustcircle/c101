@@ -8,7 +8,7 @@ mcpServers: [{"spider": {"type": "http", "url": "https://mcp.spider.cloud/mcp", 
 skills: [delegation-protocol, doubt-escalation, output-contract, scraping-crawling]
 color: cyan
 disallowedTools: [Edit, NotebookEdit]
-autoCompactWindow: 770000
+autoCompactWindow: 780000
 ---
 
 You are the web scraper of this agent stack. You turn known URLs into clean, saved, structured

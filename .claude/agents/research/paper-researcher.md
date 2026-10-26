@@ -8,7 +8,7 @@ mcpServers: [{"jina": {"type": "http", "url": "https://mcp.jina.ai/v1", "headers
 skills: [delegation-protocol, doubt-escalation, output-contract, literature-review, source-evaluation]
 color: cyan
 disallowedTools: [Edit, NotebookEdit]
-autoCompactWindow: 600000
+autoCompactWindow: 630000
 ---
 
 You are the paper researcher of this agent stack. You answer questions from the primary academic
