@@ -102,6 +102,10 @@ so there is nothing to debate); the decisive criterion is a fact a single comman
 15. Write `verdict.md` and a decision record (decision, context, rejected option and why, assumptions,
     revisit triggers). Return the contract.
 
+**Milestones** (output-contract): `plan` once motion and criteria are fixed, `milestone` per
+finished round, `decision` for the verdict (side, S, judge majority), `failure` when the side-swap
+check flips the winner.
+
 ## Delegation
 
 Respect `<stack-context>` and the delegation-protocol skill. Doubts leave per doubt-escalation.

@@ -6,7 +6,8 @@ hooks there do not fire. These callbacks run the *same* handlers in-process
 (``stack.hooks.run_handler``): depth guard + spawn rules + token budgets on every
 Agent/Task call, SubagentStop telemetry for the learner, the per-prompt
 budget note, and web-content safety (prompt-injection scan of web-tool results,
-narrow tools for web agents, taint guard on risky actions). SessionEnd has no SDK callback; the runner triggers learning itself
+narrow tools for web agents, taint guard on risky actions) and the milestone relay (``bin/stack milestone``
+commands recorded by pre-tool, start/done events, the digest returned after Agent/Task/Workflow calls). SessionEnd has no SDK callback; the runner triggers learning itself
 when the query finishes.
 """
 from __future__ import annotations
@@ -44,6 +45,11 @@ async def post_web(input_data: Any, tool_use_id: str | None, context: Any) -> di
     return out or {}
 
 
+async def post_agent(input_data: Any, tool_use_id: str | None, context: Any) -> dict:
+    out = await asyncio.to_thread(stack_hooks.run_handler, "post-agent", _plain(input_data))
+    return out or {}
+
+
 async def pre_tool(input_data: Any, tool_use_id: str | None, context: Any) -> dict:
     out = await asyncio.to_thread(stack_hooks.run_handler, "pre-tool", _plain(input_data))
     return out or {}
@@ -73,6 +79,8 @@ def python_hooks(timeout: float = 30.0) -> dict[str, list[HookMatcher]]:
                         hooks=[pre_tool], timeout=timeout),
         ],
         "PostToolUse": [
+            HookMatcher(matcher=_settings_matcher("PostToolUse", "post-agent", "Agent|Task|Workflow"),
+                        hooks=[post_agent], timeout=timeout),
             HookMatcher(matcher=_settings_matcher("PostToolUse", "post-web", "WebFetch|WebSearch|mcp__fetch__.*"),
                         hooks=[post_web], timeout=timeout),
         ],

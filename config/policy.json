@@ -179,6 +179,15 @@
     "prefer_fresh_context_reads": true
   },
   "enforce_tiers": true,
+  "milestones": {
+    "_doc": "Milestone relay (docs/MILESTONES.md, stack/progress.py). Agents log important events with `bin/stack milestone <kind> \"<text>\"`; hooks add start/done events; the main thread gets a digest after every Agent/Task/Workflow call and at the next prompt. Lifecycle events of agents on a tier in fold_tiers or at depth >= fold_lifecycle_depth are only counted in the digest.",
+    "enabled": true,
+    "max_text_chars": 200,
+    "digest_max_lines": 25,
+    "digest_max_chars": 2500,
+    "fold_lifecycle_depth": 3,
+    "fold_tiers": ["low"]
+  },
   "web_content": {
     "_doc": "Web-content safety (stack/injection.py; hooks post-web and pre-tool). web_agents always run with narrow tools: files only under write_root, no network, secret reads, git push or pipe-to-shell from Bash. post-web scores every web-tool result for prompt-injection patterns: >= medium warns the agent and taints it, >= high also returns a block decision. A tainted agent's risky actions are denied (subagents) or need the user's approval (main thread), and it may only spawn tainted_may_spawn.",
     "enabled": true,

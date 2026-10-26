@@ -102,6 +102,10 @@ undecided point as an Open doubt.
     itself), or when the caller says it will red-team.
 14. **Write the files and reply** with the summary (see Output).
 
+**Milestones** (output-contract): `plan` once the DAG check is clean (node count, waves, critical
+path), `blocker` per blocking unknown you return, `deliverable` for the plan file. Human checkpoint
+nodes are not `needs-user` events yet: the executor logs them when it reaches them.
+
 ### Owner routing (narrowest fit wins)
 
 | Node type | Owner |

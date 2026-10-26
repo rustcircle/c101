@@ -18,6 +18,11 @@ pre-agent also records, per spawn, the agent file's maxTurns at that moment (dat
                keyed by tool_use_id): the limit in force for that run, whatever happens to the file later.
 session-start  SessionStart.  Adds a short status line (missing keys, recent learned changes) as
                context and applies still-pending learned values as a catch-up.
+post-agent     PostToolUse on Agent|Task|Workflow.  At the main thread (depth 0) only: returns the digest of
+               the milestone events logged below it since the last relay as additionalContext
+               (docs/MILESTONES.md, stack/progress.py).  The log is fed by pre-tool (records
+               `bin/stack milestone <kind> "<text>"` commands, never denied), pre-agent (`start`) and
+               subagent-stop (`done`); prompt-submit appends events not yet relayed.
 session-end    SessionEnd.  Prunes old spawn records and detaches a background `learn run` (ingest,
                update, history and, with apply_on "session_end", the apply) so the 1.5 s SessionEnd
                budget is never at risk.
@@ -240,6 +245,10 @@ def pre_agent(inp: dict) -> Optional[dict]:
         _record_spawn(inp, child_type)
     except Exception as exc:
         _log_error("record-spawn", exc)
+    try:
+        _log_start(inp, pol, child_type, child_depth, parent_type)
+    except Exception as exc:  # the relay must never block a spawn
+        _log_error("milestone-start", exc)
 
     if (not pol.get("inject_context", True) or not isinstance(tool_input.get("prompt"), str)
             or tool_input["prompt"].lstrip().startswith("<stack-context")):
@@ -267,6 +276,25 @@ def pre_agent(inp: dict) -> Optional[dict]:
     if note:
         out["hookSpecificOutput"]["additionalContext"] = note
     return out
+
+
+def _agent_session(inp: dict) -> str:
+    return inp.get("session_id") or "unknown"
+
+
+def _log_start(inp: dict, pol: dict, child_type: str, child_depth: int, parent_type: str) -> None:
+    """pre-agent: the `start` milestone event (attributed to the child; the caller is in parent_id/parent_type)."""
+    from . import progress
+    cfg = progress.settings(pol)
+    if not cfg.enabled:
+        return
+    sid = _agent_session(inp)
+    desc = (inp.get("tool_input") or {}).get("description")
+    text = "%s started (depth %d)" % (child_type, child_depth) + (": %s" % desc if isinstance(desc, str) and desc.strip() else "")
+    progress.append(sid, "start", text, agent_id="", agent_type=child_type, depth=child_depth, source="hook",
+                    untrusted=progress.is_untrusted(sid, inp.get("agent_id"), parent_type, pol), cfg=cfg,
+                    extra={"parent_id": inp.get("agent_id") or "main", "parent_type": parent_type,
+                           "tool_use_id": inp.get("tool_use_id")})
 
 
 def _main_effort_drift(inp: dict) -> Optional[str]:
@@ -368,7 +396,7 @@ def _limit_at_stop(inp: dict, agent_type: str) -> tuple:
 def _prune_old(days: float = SPAWN_RECORD_MAX_AGE_DAYS) -> None:
     """Delete spawn records (and the superseded limits/ snapshots) older than ``days``."""
     cutoff = time.time() - days * 86400
-    for sub in ("spawns", "limits"):
+    for sub in ("spawns", "limits", "progress"):
         for f in glob.glob(os.path.join(paths.data_dir(), sub, "*")):
             try:
                 if os.path.getmtime(f) < cutoff:
@@ -403,7 +431,40 @@ def _record_stop(inp: dict) -> None:
                              "limit_max_turns": limit, "limit_basis": basis, "ts": time.time()}) + "\n")
 
 
+def _log_done(inp: dict) -> None:
+    """subagent-stop: the `done` milestone event: first sentence of the agent's `## Result` when the payload
+    (``last_assistant_message``, else the tail of ``agent_transcript_path``) carries it, and the stop reason
+    when it is not a normal end.  A partial or blocked Result, or an abnormal stop, is never folded."""
+    from . import progress
+    pol = _policy()
+    cfg = progress.settings(pol)
+    if not cfg.enabled or not inp.get("agent_id"):
+        return
+    sid, agent_type = _agent_session(inp), inp.get("agent_type") or "agent"
+    msg = inp.get("last_assistant_message")
+    if not isinstance(msg, str) or not msg.strip():
+        msg = progress.last_message_from_transcript(inp.get("agent_transcript_path"))
+    status, sentence = progress.result_summary(msg or "")
+    stop = next((str(inp[k]) for k in _STOP_REASON_KEYS if isinstance(inp.get(k), str) and inp[k]), "")
+    abnormal_stop = bool(stop) and stop.lower() not in progress.NORMAL_STOPS
+    text = "%s finished" % agent_type
+    if status and status != "done":
+        text += " (%s)" % status
+    if sentence:
+        text += ": %s" % sentence
+    if abnormal_stop:
+        text += " [stopped: %s]" % stop
+    progress.append(sid, "done", text, agent_id=inp.get("agent_id"), agent_type=agent_type,
+                    depth=depth_of(inp.get("agent_id"), inp.get("transcript_path")), source="hook",
+                    untrusted=progress.is_untrusted(sid, inp.get("agent_id"), agent_type, pol), cfg=cfg,
+                    extra={"abnormal": abnormal_stop or status in ("partial", "blocked")})
+
+
 def subagent_stop(inp: dict) -> Optional[dict]:
+    try:
+        _log_done(inp)
+    except Exception as exc:  # the relay must never hold up the learner
+        _log_error("milestone-done", exc)
     _record_stop(inp)
     tp = inp.get("transcript_path")
     if not tp:
@@ -511,6 +572,13 @@ def prompt_submit(inp: dict) -> Optional[dict]:
                _b.fmt(lim["max_prompt_tokens"]), _b.fmt(lim["soft_prompt_tokens"]), _b.fmt(lim["min_prompt_tokens"])))
     if bst["session_level"] != "ok":
         msg += " SESSION BUDGET %s: converge, do not open new branches." % bst["session_level"].upper()
+    try:  # events from agents that finished since the last relay (background runs, between turns)
+        from . import progress
+        dg = progress.digest(inp.get("session_id") or "unknown", inp.get("transcript_path"), progress.settings(_policy()))
+        if dg:
+            msg += "\n\n" + dg
+    except Exception as exc:
+        _log_error("milestone-digest", exc)
     return {"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": msg}}
 
 
@@ -603,9 +671,50 @@ def post_web(inp: dict) -> Optional[dict]:
     return out
 
 
+def post_agent(inp: dict) -> Optional[dict]:
+    """PostToolUse on Agent|Task|Workflow: relay the milestone digest to the main thread (depth 0 only)."""
+    if inp.get("tool_name") not in AGENT_TOOLS + ("Workflow",):
+        return None
+    if depth_of(inp.get("agent_id"), inp.get("transcript_path")) != 0:
+        return None  # a subagent's children return to it directly; only the main thread relays to the user
+    from . import progress
+    dg = progress.digest(_agent_session(inp), inp.get("transcript_path"), progress.settings(_policy()))
+    if not dg:
+        return None
+    return {"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": dg}}
+
+
+def _milestone_command(inp: dict, pol: dict) -> bool:
+    """True when the Bash call is exactly `bin/stack milestone <kind> "<text>"` (see progress.parse_milestone_command).
+    Records the event from the hook payload, so it is attributed without environment variables.  The caller
+    allows such a command for every agent: it is a local append, not a risky action."""
+    if inp.get("tool_name") != "Bash":
+        return False
+    cmd = (inp.get("tool_input") or {}).get("command")
+    if not isinstance(cmd, str) or "milestone" not in cmd:
+        return False
+    from . import progress
+    parsed = progress.parse_milestone_command(cmd)
+    if not parsed:
+        return False
+    try:
+        cfg = progress.settings(pol)
+        if cfg.enabled:
+            sid, agent_id, agent_type = _agent_session(inp), inp.get("agent_id") or "main", inp.get("agent_type") or ""
+            progress.append(sid, parsed[0], parsed[1], agent_id=agent_id,
+                            agent_type=agent_type or os.environ.get("CLAUDE_STACK_MAIN_AGENT") or "main",
+                            depth=depth_of(inp.get("agent_id"), inp.get("transcript_path")), source="agent",
+                            untrusted=progress.is_untrusted(sid, inp.get("agent_id"), agent_type, pol), cfg=cfg)
+    except Exception as exc:
+        _log_error("milestone", exc)
+    return True
+
+
 def pre_tool(inp: dict) -> Optional[dict]:
     """PreToolUse on Bash / file writes / web form and sandbox input tools: narrow tools for web agents, taint guard."""
     pol = _policy()
+    if _milestone_command(inp, pol):
+        return None  # logged and always allowed, also for web and tainted agents
     wc = pol.get("web_content") or {}
     if not wc.get("enabled", True):
         return None
@@ -642,6 +751,7 @@ HANDLERS = {
     "session-start": session_start,
     "post-web": post_web,
     "pre-tool": pre_tool,
+    "post-agent": post_agent,
 }
 
 

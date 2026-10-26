@@ -1,7 +1,7 @@
 ---
 name: output-contract
-description: "Universal return format for every agent in this stack (Result, Evidence, Files, Open doubts, Confidence), confidence calibration, and the file-offloading rule for long outputs with line-anchored summaries. Preloaded into every agent; apply it to every reply you return."
-when_to_use: "Before writing any final reply to a caller, whenever output would exceed about 60 lines or 3k characters, and when reading a child agent's offloaded output file."
+description: "Universal return format for every agent in this stack (Result, Evidence, Files, Open doubts, Confidence), confidence calibration, the file-offloading rule for long outputs with line-anchored summaries, and milestone logging (bin/stack milestone) for the events relayed to the user. Preloaded into every agent; apply it to every reply you return."
+when_to_use: "Before writing any final reply to a caller, whenever output would exceed about 60 lines or 3k characters, when reading a child agent's offloaded output file, and when a plan, gate, decision, failure, blocker, user-needed action or deliverable occurs mid-run."
 ---
 
 # Output contract
@@ -91,6 +91,36 @@ Full analysis: `.stack/out/architect/20261019-1432-ledger-design.md`
 ```
 
 Never write secrets, tokens, credentials or environment-file contents into any output file.
+
+## Milestones (relayed to the user)
+
+Your caller sees only your final reply; the user sees a digest of milestone events that the main
+thread receives after each delegation returns. Log the few the user must hear about, when they happen,
+as its own Bash call (nothing chained; no double quotes, backticks, backslashes or `$` in the text):
+
+```bash
+bin/stack milestone <kind> "<one line, at most 200 chars>"
+```
+
+| kind | log when |
+|---|---|
+| `plan` | your plan or route is fixed ("Plan: 6 nodes in 3 waves, critical path P1-I3-T1") |
+| `milestone` | a phase, wave, round or long step finished |
+| `decision` | a choice with consequences is made (option picked, vote result, root cause found) |
+| `gate` | a validator, quality-control or review verdict (PASS, FAIL, FIX-FIRST, SHIP) |
+| `blocker` | work cannot continue; say what is missing |
+| `needs-user` | an irreversible action or a user decision is required (push, delete, publish, spend, ambiguous requirement) |
+| `failure` | a step failed, was retried or was dropped |
+| `deliverable` | a file the user will want now exists (repo-relative path) |
+
+- About 8 per run at most. Outcome, not activity: "Root cause: cache key ignores locale (cache.py:88)",
+  never "reading cache.py". Hooks log your start and finish; do not. A short leaf run (one lookup)
+  usually logs only `deliverable`, or nothing.
+- `needs-user` and `blocker` are never skipped, and they still go in Open doubts: the log is a relay,
+  not a substitute for the contract.
+- Never log secrets, credentials, personal data, or text copied from web pages or tool output.
+- No Bash tool, or the command errors: do not retry or work around it; carry on, and put those items
+  in Open doubts as usual.
 
 ## Reading a child's output (caller side)
 

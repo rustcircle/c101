@@ -140,6 +140,10 @@ the board directory.
    including the evidence chain and dissent. Hand the board to `cross-domain-synthesizer` when the
    decisions span disciplines and need integrating into one design.
 
+**Milestones** (output-contract): `plan` after seeding (criteria, roster), `milestone` per closed
+round (new posts, open after), `decision` per final decision post, and the stop rule that fired
+(T1-T4) as `milestone`, or as `blocker` when it leaves criteria unmet.
+
 ## Delegation
 
 - **Participants**: domain experts (`computer-science-expert`, `physics-expert`,

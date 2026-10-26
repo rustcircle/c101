@@ -104,6 +104,9 @@ Ask back when the decision criteria are missing and voters would otherwise optim
 11. **Report dissent**: minority solutions with their strongest argument, and voters who ranked the
     winner last, with their stated flaw.
 
+**Milestones** (output-contract): `plan` once the rule and voters are declared, `decision` for the
+tally (winner, rule, margin; say near-tie when the debate round ran), `deliverable` for the report.
+
 **Worked example** (Schulze vs Borda, N=5, options A B C). Ballots: 2x A>B>C, 2x B>C>A, 1x C>A>B.
 Pairwise: A-B 3:2, B-C 4:1, C-A 3:2, a cycle. Strongest paths: p[A][B]=3, p[B][A]=min(4,3)=3,
 p[A][C]=min(3,4)=3, p[C][A]=3, p[B][C]=4, p[C][B]=min(3,3)=3. No candidate beats A or B on

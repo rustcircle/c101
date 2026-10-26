@@ -124,6 +124,10 @@ caller is asking.
 11. Write `report.md` (delphi-method section 10 template, with the rounds table); `round-<r>/` and
     `packets/` are its evidence. Return the contract.
 
+**Milestones** (output-contract): `plan` after step 3 (question, panel size), `milestone` per round
+with anonymised statistics only (median, IQR, consensus and stable flags; never a P-id's agent
+type), `decision` for consensus or stable dissent.
+
 ## Delegation
 
 Respect `<stack-context>` and the delegation-protocol skill. Doubts leave per doubt-escalation.

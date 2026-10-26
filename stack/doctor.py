@@ -466,6 +466,39 @@ def check_settings(rep: Report) -> None:
             rep.warn("config/learning.json", "bounds for unknown agent %r" % a)
 
 
+MILESTONE_INTS = ("max_text_chars", "digest_max_lines", "digest_max_chars", "fold_lifecycle_depth")
+MILESTONE_KEYS = {"_doc", "enabled", "fold_tiers", *MILESTONE_INTS}
+
+
+def check_milestones(rep: Report) -> None:
+    """config/policy.json `milestones` (docs/MILESTONES.md): value types, and the post-agent hook that relays it."""
+    where = "config/policy.json:milestones"
+    block = read_json(os.path.join(paths.CONFIG_DIR, "policy.json")).get("milestones")
+    if block is None:
+        return
+    if not isinstance(block, dict):
+        rep.err(where, "must be an object")
+        return
+    for k in sorted(set(block) - MILESTONE_KEYS):
+        rep.warn(where, "unknown key %r (ignored)" % k)
+    if "enabled" in block and not isinstance(block["enabled"], bool):
+        rep.err(where, "enabled must be true or false")
+    for k in MILESTONE_INTS:
+        v = block.get(k)
+        floor = 0 if k == "fold_lifecycle_depth" else 1
+        if k in block and (not isinstance(v, int) or isinstance(v, bool) or v < floor):
+            rep.err(where, "%s must be an integer >= %d" % (k, floor))
+    ft = block.get("fold_tiers")
+    if "fold_tiers" in block:
+        known = {t.lower().replace("_model", "") for t in read_json(os.path.join(paths.CONFIG_DIR, "models.json")).get("tiers", {})}
+        if not isinstance(ft, list) or any(not isinstance(t, str) or t.lower() not in known for t in ft):
+            rep.err(where, "fold_tiers must be a list of tier names from config/models.json (%s)" % ", ".join(sorted(known)))
+    if block.get("enabled", True) is not False:
+        groups = read_json(os.path.join(paths.REPO, ".claude", "settings.json")).get("hooks", {}).get("PostToolUse", [])
+        if not any("hook post-agent" in h.get("command", "") for g in groups for h in g.get("hooks", [])):
+            rep.err(".claude/settings.json:PostToolUse", "milestones are enabled but no `bin/stack hook post-agent` hook relays them")
+
+
 def check_executables(rep: Report) -> None:
     for p in paths.script_files():
         if not os.access(p, os.X_OK):
@@ -499,7 +532,7 @@ def check_auth(rep: Report) -> None:
 def run() -> Report:
     rep = Report()
     for fn in (check_agents, check_tiers, check_packs, check_skills, check_workflows, check_mcp, check_settings,
-               check_executables, check_auth):
+               check_milestones, check_executables, check_auth):
         try:
             fn(rep)
         except Exception as e:  # report, don't crash

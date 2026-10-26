@@ -196,6 +196,17 @@ class SdkOptionsTests(unittest.TestCase):
         self.assertEqual(json.loads(o.settings)["availableModels"],
                          ["claude-haiku-5-5", "claude-opus-5-5", "claude-sonnet-5-5"])
 
+    def test_python_hooks_register_the_milestone_relay_like_settings_json(self):
+        from stack_sdk import hooks
+        groups = hooks.python_hooks()
+        post = {m.matcher: [h.__name__ for h in m.hooks] for m in groups["PostToolUse"]}
+        self.assertEqual(post["Agent|Task|Workflow"], ["post_agent"])
+        self.assertIn("post_web", sum(post.values(), []))
+        with open(os.path.join(ROOT, ".claude", "settings.json"), encoding="utf-8") as fh:
+            wired = {g.get("matcher") for g in json.load(fh)["hooks"]["PostToolUse"]}
+        self.assertIn("Agent|Task|Workflow", wired)
+        self.assertIn("Bash", next(m.matcher for m in groups["PreToolUse"] if m.hooks == [hooks.pre_tool]))
+
     def test_hook_strips_per_call_model_and_forces_foreground(self):
         from stack import hooks
         tmp = tempfile.mkdtemp()

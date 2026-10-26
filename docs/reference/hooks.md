@@ -23,6 +23,7 @@ All hooks are `type: "command"` hooks that call one entry point, `"$CLAUDE_PROJE
 | `PreModelSwitch` | (all) | `model-switch` → `model_switch()` | 10 | no | exit code 0 (allow) or 2 + stderr reason (block) |
 | `PreToolUse` | `Bash\|Write\|Edit\|MultiEdit\|NotebookEdit\|mcp__playwright__browser_type\|…fill_form\|…file_upload\|…press_key\|mcp__desktop-sandbox__(type_text\|key\|launch\|put_file\|click\|drag\|scroll\|move)\|mcp__neural-memory__.*` | `pre-tool` → `pre_tool()` | 10 | no | `permissionDecision` `deny` (web agents, tainted subagents) or `ask` (tainted main thread) |
 | `PostToolUse` | `WebFetch\|WebSearch\|mcp__fetch__.*\|mcp__jina__.*\|mcp__exa__.*\|mcp__spider__.*\|mcp__playwright__.*\|…\|mcp__desktop-sandbox__.*` | `post-web` → `post_web()` | 10 | no | `additionalContext` warning (score ≥ 3), plus `decision: block` (score ≥ 6) |
+| `PostToolUse` | `Agent\|Task\|Workflow` | `post-agent` → `post_agent()` | 10 | no | `additionalContext` milestone digest (main thread only) |
 
 The call path from Claude Code to a handler:
 
@@ -172,6 +173,37 @@ with the reaction the protocol requires, in [The pre-agent hook](delegation.md#t
    `budgets.json`, learned global budgets), then touches `last_update`. It never applies: agent files do not change
    while a session runs; the recommendations are written when the session ends.
 
+## `post-agent`: milestone relay
+
+Specification: [docs/MILESTONES.md](../MILESTONES.md); code: `stack/progress.py`. Every agent can log the few events the user must hear
+about (`bin/stack milestone <kind> "<text>"`), hooks add lifecycle events, and the main thread receives a digest. The pieces:
+
+| Hook | Does |
+|---|---|
+| `pre-tool` (Bash) | Recognises exactly `bin/stack milestone <kind> <text>` (also `./bin/stack`, `"$CLAUDE_PROJECT_DIR"/bin/stack`) **before** the web-content and taint checks, appends the event from the payload (`session_id`, `agent_id`, `agent_type`, depth via `depth_of`) and returns nothing, so the command is never denied, also for web agents and tainted agents (their events carry `untrusted: true`). The text must be plain words or a quoted string without `$`, backticks or backslashes; anything else (a `;`, a pipe, a substitution) is not recognised: it is not recorded and goes through the normal checks |
+| `pre-agent` | after the spawn is allowed: `start` event, attributed to the child, with `parent_id`, `parent_type`, `tool_use_id` |
+| `subagent-stop` | `done` event before the learner work: `<type> finished` plus the first sentence of the `## Result` section of `last_assistant_message` (when the payload has none, the tail of `agent_transcript_path` is read), `(partial)` / `(blocked)` from its `Status:` line and `[stopped: <reason>]` for a stop that is not a normal end; such events are `abnormal` and never folded |
+| `post-agent` | main thread only (no `agent_id`): digest of the events after the session cursor as `additionalContext`, then the cursor moves; subagents get `None` |
+| `prompt-submit` | appends the digest of events not yet relayed (background agents that finished between turns) after the budget line |
+
+State: `<data>/progress/<session_id>.jsonl` (one event per line, appended under `flock`, so parallel agents never tear a line),
+`<session_id>.cursor` (byte offset already relayed, advanced under `<session_id>.cursor.lock` so concurrent hooks relay each event once).
+`session-end` prunes files older than 14 days. A trailing line without a newline is left for the next relay.
+
+Digest: the header line, then at most `digest_max_lines` (25) lines and `digest_max_chars` (2500) in the order `needs-user`, `blocker`,
+`failure`, `gate`, `decision`, `deliverable`, `plan`, `milestone`, then lifecycle; the rest is counted (`+N more`).
+`start`/`done` events of agents on a tier in `fold_tiers` (`low`) or at depth >= `fold_lifecycle_depth` (3) are only counted
+(`+N lifecycle events of helpers and deep agents`), and a digest made only of those is not sent. Each line names the agent as
+`orchestrator > python-expert` when the chain can be rebuilt from the `start` events and the subagents' `toolUseId` in their
+meta files, else just the agent type. Text from untrusted agents is shown as `[data] "..."`. Config: the `milestones` block of
+`config/policy.json` (`enabled`, `max_text_chars`, `digest_max_lines`, `digest_max_chars`, `fold_lifecycle_depth`, `fold_tiers`),
+checked by `bin/stack doctor`.
+
+Payload notes: a foreground `Agent` call blocks the main turn, so the digest arrives when it returns; a `run_in_background` call returns
+at once, its events arrive with a later call or at the next prompt. `bin/stack milestone` itself only validates the kind and prints
+`logged` inside Claude Code (the hook did the recording); without `CLAUDECODE` in the environment it appends under session `unknown`.
+Read the log with `bin/stack progress [--session SID] [--all] [--follow] [--kinds k1,k2] [--json]`.
+
 ## `session-start`: status line
 
 It applies pending learned values as a catch-up (`_apply_learned`): when
@@ -231,7 +263,7 @@ reader never sees a partial file.
 When an SDK session does not load this repo's settings (`cwd` outside the repo, or `hooks="python"`),
 `stack_sdk/hooks.py` registers the same handlers as Python callbacks through `run_handler`, each executed with
 `asyncio.to_thread` so the event loop is never blocked: `pre-agent` on `PreToolUse` `Agent|Task` (30 s),
-`subagent-stop` on `SubagentStop` (120 s, result discarded) and `prompt-submit` on `UserPromptSubmit` (30 s); see
+`post-agent` on `PostToolUse` `Agent|Task|Workflow` (30 s), `subagent-stop` on `SubagentStop` (120 s, result discarded) and `prompt-submit` on `UserPromptSubmit` (30 s); see
 [Hooks as Python callbacks](sdk.md#hooks-as-python-callbacks). The SDK has no `SessionStart`/`SessionEnd` callbacks, so the
 runner calls `engine.run_after_session` itself when the query finishes. `PreModelSwitch` is not registered there; the
 SDK path pins the model in the options instead (layer 7 below).

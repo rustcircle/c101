@@ -12,7 +12,9 @@
     stack learn run --transcript P              ingest + update + record history (SessionEnd hook)
     stack learn start                           apply pending learned values (SessionStart hook)
     stack learn history [--agent A] [--since-days N] [--by week|day|session] [--json]   trends over time
-    stack hook <pre-agent|subagent-stop|session-start|session-end>
+    stack hook <pre-agent|subagent-stop|session-start|session-end|post-agent|...>
+    stack milestone <kind> "<text>"             log a milestone for the user (recorded by the pre-tool hook)
+    stack progress [--session SID] [--all] [--follow] [--kinds k1,k2] [--json]   read / tail the milestone log
     stack depth [SESSION_ID]                    spawn statistics recorded by the depth guard
     stack mcp list | enable NAME | disable NAME  manage optional MCP servers (config/mcp.optional.json)
     stack mcp sync [--dry-run]                  re-render inline (lazy) servers in agents from config/mcp.servers.json
@@ -263,6 +265,55 @@ def cmd_depth(a) -> int:
     return 0
 
 
+def cmd_milestone(a) -> int:
+    """`bin/stack milestone <kind> "<text>"`.  Inside Claude Code the pre-tool hook has already recorded the
+    event (with session, agent and depth from the hook payload), so this only validates and confirms; outside
+    Claude Code (no CLAUDECODE in the environment) it appends the event itself under session `unknown`."""
+    from . import progress
+    if a.kind not in progress.AGENT_KINDS:
+        print("unknown kind %r; use one of: %s" % (a.kind, ", ".join(progress.AGENT_KINDS)), file=sys.stderr)
+        return 2
+    text = " ".join(a.text)
+    if not progress.sanitise(text, 1):
+        print("usage: stack milestone <kind> \"<one line>\"", file=sys.stderr)
+        return 2
+    if not os.environ.get("CLAUDECODE"):
+        try:
+            cfg = progress.settings(hooks._policy())
+            if cfg.enabled:
+                progress.append("unknown", a.kind, text, agent_id="cli", agent_type="cli", cfg=cfg)
+        except Exception as exc:  # logging must never make the command fail
+            hooks._log_error("milestone-cli", exc)
+    print("logged")
+    return 0
+
+
+def cmd_progress(a) -> int:
+    from . import progress
+    kinds = [k.strip() for k in (a.kinds or "").split(",") if k.strip()] or None
+    bad = [k for k in kinds or [] if k not in progress.KINDS]
+    if bad:
+        print("unknown kind(s) %s; use: %s" % (", ".join(bad), ", ".join(progress.KINDS)), file=sys.stderr)
+        return 2
+
+    def emit(ev: dict) -> None:
+        print(json.dumps(ev, ensure_ascii=False) if a.json else progress.format_event(ev, with_session=a.all), flush=True)
+
+    if a.follow:
+        try:
+            progress.follow(a.session, kinds, emit)
+        except KeyboardInterrupt:
+            pass
+        return 0
+    events = progress.list_events(a.session, kinds, all_sessions=a.all)
+    if not events:
+        print("no milestone events yet (%s)" % progress.progress_dir(), file=sys.stderr)
+        return 0
+    for ev in events:
+        emit(ev)
+    return 0
+
+
 def _load_json(path: str) -> dict:
     with open(path, encoding="utf-8") as fh:
         return json.load(fh)
@@ -408,6 +459,19 @@ def main(argv=None) -> int:
     h = sub.add_parser("hook")
     h.add_argument("name")
     h.set_defaults(fn=lambda a: hooks.main(a.name))
+
+    mi = sub.add_parser("milestone", help="log a milestone for the user (see docs/MILESTONES.md)")
+    mi.add_argument("kind")
+    mi.add_argument("text", nargs="*")
+    mi.set_defaults(fn=cmd_milestone)
+
+    pg = sub.add_parser("progress", help="print or follow the milestone log")
+    pg.add_argument("--session", help="session id (default: the newest session)")
+    pg.add_argument("--all", action="store_true", help="events of every session, oldest first")
+    pg.add_argument("--follow", "-f", action="store_true", help="keep printing new events")
+    pg.add_argument("--kinds", help="comma-separated kinds to show")
+    pg.add_argument("--json", action="store_true")
+    pg.set_defaults(fn=cmd_progress)
 
     sub.add_parser("install", help="wire the stack into ~/.claude (see stack/install.py)")
 

@@ -213,4 +213,5 @@ The full reference manual lives in [`docs/reference/`](docs/reference/); each se
 
 [Architecture](docs/ARCHITECTURE.md) · [Conventions](docs/CONVENTIONS.md) · [Depth and budgets](docs/DEPTH.md) ·
 [Learning](docs/LEARNING.md) · [MCP servers](docs/MCP.md) · [Agent SDK](docs/SDK.md) · [Diagrams](docs/DIAGRAMS.md) ·
+[Milestone relay](docs/MILESTONES.md) ·
 [Reference manual](docs/reference/)

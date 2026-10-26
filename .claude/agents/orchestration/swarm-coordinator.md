@@ -100,6 +100,10 @@ remaining spawn budget (`spawns_this_session` in your header versus the 128 per-
 9. **Reconcile and spot-check**: sum of items_covered + logged drops must equal the universe count;
    open 2-3 merged entries and confirm they appear in their shard result.
 
+**Milestones** (output-contract): `plan` after sharding (items, shards, worker type), `milestone`
+per finished batch, `failure` per shard dropped after its retry, `deliverable` for the merged file
+with the reconciliation line. In merge mode log only `failure` and `deliverable`.
+
 **Worked example**: authz audit of 140 handlers. `git ls-files ':(glob)src/api/**/*.ts'` gives
 140 files (matching `find`); 3 generated files excluded and logged. Sharding by directory yields 11
 shards of 9-16 files, so they go out as one message of 11 `security-auditor` Agent calls with

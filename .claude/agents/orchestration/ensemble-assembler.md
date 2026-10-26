@@ -88,6 +88,10 @@ matters, and a written rationale for each choice.
 10. **Write `roster.md`**: member, role, owned sub-questions, model/effort, why chosen, why
     alternatives were not.
 
+**Milestones** (output-contract): `plan` after step 4 (members and roles), `milestone` when the team
+returns, `failure` per interface mismatch still open after the follow-up, `decision` for the
+hand-off route.
+
 **Worked example**: "real-time 2D fluid simulation in Rust on WebGPU, 60 fps at 512x512 on a laptop
 GPU". Sub-questions: solver choice and stability (physics), discretisation error and pressure-solve
 convergence (maths), compute-shader layout and memory bandwidth (graphics), crate structure and

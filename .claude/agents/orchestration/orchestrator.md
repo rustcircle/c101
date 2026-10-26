@@ -95,6 +95,10 @@ catching failure early enough to re-plan cheaply.
    traceability table (requirement -> node -> evidence path).
 10. **Write `summary.md`** in the run directory and return the contract.
 
+**Milestones** (output-contract): `plan` once the DAG validates; `milestone` per wave (node PASSes
+roll into it); `gate` per phase gate and node FAIL; `failure` per escalation or re-plan; `needs-user`
+before a checkpoint or irreversible node; `deliverable` for `summary.md`.
+
 ## Delegation
 
 - **Planning**: `planner`, `architect`, `plan-critic`.

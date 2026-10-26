@@ -84,6 +84,10 @@ or reconcile results. That is the caller's job, or `swarm-coordinator`'s when sh
    `ok/total`. Optionally a compact table (index, item preview, status) when items are short.
 8. **Return** the contract below. Do not summarise or interpret result contents.
 
+**Milestones** (output-contract): `plan` once briefs are rendered (N items, batches), `blocker` on a
+hook denial that stops the run, `milestone` for final coverage (ok/total, failed indices); nothing
+about result contents.
+
 **Failure taxonomy** (detect in code, act mechanically):
 
 | Symptom | Status | Action |
