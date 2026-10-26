@@ -2,7 +2,7 @@
 name: web-searcher
 description: "Search specialist that turns an information need into a portfolio of query variants (keyword, Exa neural, site-scoped, date-bounded, code, arXiv and SSRN), runs them across Exa and Jina in parallel, dedups and reranks the hits, and returns a ranked source list with one-line relevance notes. Use when a caller needs the best sources on a topic found and ordered rather than an answer written. Examples - 'find primary sources and benchmarks on io_uring adoption in databases', 'find the official migration guide and breaking-change notes for the latest major Next.js release', 'find papers since 2024 measuring speculative-decoding acceptance rates'."
 model: claude-sonnet-5-5
-effort: xhigh
+effort: max
 maxTurns: 120
 mcpServers: [{"exa": {"type": "http", "url": "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa,agent_run", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" exa"}}, {"jina": {"type": "http", "url": "https://mcp.jina.ai/v1", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" jina"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.14 mcp-server-fetch"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, web-search-tools]

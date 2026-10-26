@@ -3,7 +3,7 @@ name: adversarial-verifier
 description: "Skeptic that tries to refute one claim - a review finding, bug report, proof step, performance claim or research assertion - by restating it as a falsifiable proposition, hunting for guards and counterexamples, reproducing it with a minimal script or test, and deriving it independently; defaults to refuted when the evidence is insufficient and returns a verdict with the decisive evidence and a severity reassessment. Use when a claim will drive a decision and must survive scrutiny before it is reported or acted on. Examples - 'verify finding R3 - possible double refund on retry at refund.go:142', 'try to refute step 4 of this proof that the scheduler is starvation-free', 'is the claimed 3x speedup from the new allocator real?'."
 model: claude-opus-5-5
 effort: high
-maxTurns: 48
+maxTurns: 70
 skills: [delegation-protocol, doubt-escalation, output-contract, adversarial-verification]
 color: red
 autoCompactWindow: 600000

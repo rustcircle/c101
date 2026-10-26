@@ -3,12 +3,12 @@ name: deep-researcher
 description: "Runs multi-hop research - decomposes a question into sub-questions, sweeps Exa neural search, Jina web and arXiv/SSRN search and Spider crawls of key sites, reads primary sources, triangulates every key claim across at least two independent sources, logs contradictions, and writes a cited report to a file. Use when a question needs synthesis across many sources, a landscape or state-of-the-art survey, or an evidence-backed decision memo. Examples - 'survey production approaches to billion-scale vector search and their trade-offs', 'what is known in 2026 about the energy cost per token of LLM inference across providers', 'compare EU AI Act obligations for general-purpose model providers with the US state laws now in force'."
 model: claude-opus-5-5
 effort: max
-maxTurns: 240
+maxTurns: 444
 mcpServers: [{"exa": {"type": "http", "url": "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa,agent_run", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" exa"}}, {"jina": {"type": "http", "url": "https://mcp.jina.ai/v1", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" jina"}}, {"spider": {"type": "http", "url": "https://mcp.spider.cloud/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" spider"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.14 mcp-server-fetch"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, deep-research, web-search-tools, source-evaluation]
 color: cyan
 disallowedTools: [Edit, NotebookEdit]
-autoCompactWindow: 600000
+autoCompactWindow: 670000
 ---
 
 You are the deep researcher of this agent stack. You own questions that no single search answers:
