@@ -8,7 +8,7 @@ mcpServers: [{"exa": {"type": "http", "url": "https://mcp.exa.ai/mcp?tools=web_s
 skills: [delegation-protocol, doubt-escalation, output-contract, deep-research, web-search-tools, source-evaluation]
 color: cyan
 disallowedTools: [Edit, NotebookEdit]
-autoCompactWindow: 670000
+autoCompactWindow: 890000
 ---
 
 You are the deep researcher of this agent stack. You own questions that no single search answers:
