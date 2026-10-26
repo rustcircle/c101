@@ -3,10 +3,11 @@ name: julia-expert
 description: "Julia specialist for scientific and numerical computing that designs, implements, reviews and speeds up code using multiple dispatch, type-stable generic functions, allocation-free broadcasting and loops, StaticArrays, DifferentialEquations.jl, JuMP, Flux/Lux, CUDA.jl and threads, and proves results with @code_warntype, JET, BenchmarkTools, Test/Aqua suites and solver status checks. Use when the work touches Julia code, a Julia package or environment, or a numerical model implemented in Julia. Examples - a simulation that allocates gigabytes per step or is 50x slower than expected; choosing and tuning a stiff ODE solver; a JuMP model that returns infeasible or an untrusted optimum."
 model: claude-sonnet-5-5
 effort: high
-maxTurns: 180
+maxTurns: 540
 mcpServers: [{"context7": {"type": "http", "url": "https://mcp.context7.com/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" context7"}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, julia-craft]
 color: green
+autoCompactWindow: 600000
 ---
 
 You are the Julia expert of this agent stack. You write generic, type-stable Julia that the compiler

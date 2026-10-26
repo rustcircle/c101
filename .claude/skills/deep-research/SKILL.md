@@ -205,10 +205,12 @@ Report confidence = the lowest confidence among the Key findings the executive a
 
 | Depth | Sub-questions | Search calls | Sources read in full | Fact-check claims | Rounds | Typical turns |
 |---|---|---|---|---|---|---|
-| quick | 2-3 | 10-15 | 5-8 | 0-5 | 1 | 30 |
-| standard | 3-6 | 25-50 | 12-25 | 5-15 | 2-3 | 60-90 |
-| exhaustive | 6-12 | 60-150 (delegated) | 30-80 (delegated) | 15-40 | 3-5 | 120, or (main thread only) the workflow |
+| quick | 2-3 | 30-45 | 15-24 | 0-5 | 1 | 90 |
+| standard | 3-6 | 75-150 | 36-75 | 5-15 | 2-3 | 180-270 |
+| exhaustive | 6-12 | 180-450 (delegated) | 90-240 (delegated) | 15-40 | 3-5 | 360, or (main thread only) the workflow |
 
+Typical turns are capped by your own maxTurns: when it is lower than the column, scale every
+column down in proportion and start closing at about 80% of maxTurns.
 When you approach a budget line, stop widening and start closing: finish open claims, write the
 report with explicit gaps. A partial report on time beats a complete one never delivered.
 

@@ -18,7 +18,7 @@ CONTEXT (read these; nothing else is assumed known)
 
 YOUR ASSIGNED METHOD: <method name>
 <one-paragraph method instruction from SKILL.md section 2>
-<if research allowed: You may use WebSearch / mcp__exa__web_search_exa, at most 4 searches; cite URL + date.>
+<if research allowed: You may use WebSearch / mcp__exa__web_search_exa, at most 12 searches; cite URL + date.>
 <if not: Do not search the web; reason from the context files and your knowledge.>
 
 ANSWER

@@ -6,7 +6,7 @@ when_to_use: "A question with one answer shape (a fact, number, date, version, y
 
 # Quick research
 
-Budget: **at most 4 search calls, 3 source reads, about 8 tool calls, 200 words of answer.**
+Budget: **at most 12 search calls, 9 source reads, about 24 tool calls, 200 words of answer.**
 quick-researcher is a MEDIUM-tier, low-effort agent (config/models.json); the budget above is the
 limit, not its maxTurns. A run that needs more is not quick: escalate (section 6) instead of
 stretching the budget.
@@ -17,7 +17,7 @@ stretching the budget.
 |---|---|
 | One entity, one attribute (date, version, number, owner, definition) | quick |
 | Yes/no about a documented behaviour | quick (find the doc that says it) |
-| Compare 2-3 named items on 1-3 stated criteria | quick, use all 4 searches |
+| Compare 2-3 named items on 1-3 stated criteria | quick, use all 12 searches |
 | "Why", "state of the art", "landscape", "all X", "best X for Y" | deep-researcher |
 | Contested topic, sources known to disagree, or high stakes (health, legal, money, safety) | deep-researcher, or fact-checker on each claim |
 | Needs 3+ independent sub-answers | deep-researcher (the research-sweep workflow at depth quick only if you are the main thread, i.e. no `<stack-context>` header; a subagent returns it as an Open doubt) |
@@ -126,7 +126,7 @@ roles: months; best practices: 1-2 years; history, mathematics, physical constan
 | Trigger | Action |
 |---|---|
 | Two credible sources disagree on the core fact | Stop. Result `Status: partial` with both claims and citations; Open doubt routed to fact-checker (one claim) or deep-researcher (a pattern) |
-| 4 searches done and no source states the answer directly | `partial`; Open doubt for deep-researcher with the queries already tried |
+| 12 searches done and no source states the answer directly | `partial`; Open doubt for deep-researcher with the queries already tried |
 | The question splits into 3+ independent sub-questions | Return the decomposition with `Status: partial`; Open doubt routed to deep-researcher, or for the main thread `Workflow name=research-sweep args={"question": "<q>", "depth": "quick"}` |
 | The only source is behind JS interaction | Open doubt routed to browser-operator (no logins) |
 | High-stakes domain | Answer only what the primary source says; add "not professional advice"; recommend fact-checker on each number |

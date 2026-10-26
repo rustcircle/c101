@@ -10,6 +10,7 @@ Read with `jq`; never edit by hand to steer recommendations.
 | `budgets.json` | `learn update` | `{name: {max_output_tokens, recommend_1m_context, autoCompactWindow?, tokens}, "_global": {n_sessions, n_prompts, session, prompt, recommended, applied}}` |
 | `history.jsonl` | `learn run` (SessionEnd) | One line per session (re-recording replaces it): `session_id`, `recorded_at`, `started_at`, `project`, `runs`, `tokens_total`, `agents: {type: {runs, capped, tool_errors, tokens_total, output_tokens, duration_s, effort, models, turns_median/max, tool_rounds_median/max, maxTurns, effort_setting}}`; read by `learn history` |
 | `changes.jsonl` | `learn apply` (session-start hook, `learn start`) | One line per applied frontmatter edit |
+| `spawns/<session-id>.jsonl` | `pre-agent` hook | `{tool_use_id, agent_type, limit_max_turns, ts}` per spawn: the maxTurns the agent file said at the spawn (pruned after 14 days) |
 | `stops/<session-id>.jsonl` | `subagent-stop` hook | `{agent_id, agent_type, effort, ts}` per finished subagent; the effort in effect, authoritative over the transcript |
 | `sessions/<session-id>.json` | `pre-agent` hook | Spawn counts: `spawns`, `by_depth`, `by_type`, `max_depth_seen` |
 | `last_ingest`, `last_update` | `subagent-stop` hook | Timestamps (mtime) for debounce and the 30-min update interval |

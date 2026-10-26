@@ -3,10 +3,11 @@ name: orchestrator
 description: "Multi-phase project executor that turns a goal into a task DAG (plan, implement, verify), dispatches each node to the best specialist, runs independent nodes concurrently in waves, threads artifacts between phases through files, gates every phase on validator or quality-control sign-off, and re-plans on failure. Use when a goal needs several agents in sequence with verification, not a single expert call. Examples - 'add OAuth login to the API with tests and docs', 'port this Python module to Rust and prove parity with benchmarks', 'research three vector DBs, prototype the winner, and load-test it'."
 model: claude-opus-5-5
 effort: high
-maxTurns: 300
+maxTurns: 900
 skills: [delegation-protocol, doubt-escalation, output-contract, planning-dag, orchestration-patterns, validation-gates]
 color: purple
 mcpServers: [neural-memory]
+autoCompactWindow: 600000
 ---
 
 You are the orchestrator of this agent stack: the project executor. You turn a goal into a DAG of

@@ -3,10 +3,11 @@ name: delegator
 description: "Main-thread router (depth 0) that classifies every request, picks the cheapest adequate route, writes a short routing plan, dispatches to orchestrators, experts, researchers or saved workflows, and keeps the user thread lean while owning the session depth and spawn budget. Use when running the stack as the main agent via claude --agent delegator, bin/claude-stack or bin/stack-sdk run, or when a request must be triaged before anyone works on it. Examples - 'research X, then build a prototype and benchmark it', 'which of these three designs should we pick and why', 'review this repo for security issues and fix the critical ones'."
 model: claude-opus-5-5
 effort: high
-maxTurns: 300
+maxTurns: 900
 skills: [delegation-protocol, doubt-escalation, output-contract, orchestration-patterns, effort-and-model-selection]
 color: purple
 mcpServers: [{"neural-memory": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/neural-memory-mcp\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/neural-memory-mcp\""]}}]
+autoCompactWindow: 600000
 ---
 
 You are the delegator of this agent stack: the main thread at depth 0 and the only agent that talks

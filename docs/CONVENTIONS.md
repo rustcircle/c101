@@ -63,7 +63,8 @@ Rules:
   `LOW_MODEL` override the ids (e.g. to trial a new release). Doctor warns on drift.
 - `maxTurns`, `effort` (and, raise-only, `autoCompactWindow`) are rewritten in place by `bin/stack learn apply`.
   Bounds live in `config/learning.json`.
-- `autoCompactWindow` (100000..1000000) may be added by a human or the tuner for long-running agents.
+- `autoCompactWindow` (100000..1000000): every agent carries 600000 (`default_traits` in `config/models.json`, also the
+  learner's floor, capped at the tier model's `context_window`); the learner may only raise it.
 
 ## 3. Agent body
 
@@ -189,8 +190,10 @@ when_to_use: Optional extra trigger guidance.
 ## 9. Self-tuning
 
 `SessionEnd`/`SubagentStop` hooks ingest transcripts into `~/.claude/stack-data/` and update Bayesian
-posteriors per agent type; the next `SessionStart` (if `auto_apply`, `apply_on: "session_start"`) rewrites
-`maxTurns`/`effort` within bounds, so agent files never change mid-session.
+posteriors per agent type; at `SessionEnd` (if `auto_apply`, `apply_on: "session_end"`) the learner rewrites
+`maxTurns`/`effort` within bounds, so the next session loads the new values and agent files never change mid-session
+(`SessionStart` only catches up on pending ones; Claude Code re-reads a changed agent file from the next turn, but not
+before its file watcher is up at startup).
 Learned token windows go to `~/.claude/stack-data/budgets.json`. See `docs/LEARNING.md`.
 
 ## 10. Token budgets and context policy

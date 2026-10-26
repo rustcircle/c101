@@ -3,10 +3,11 @@ name: rust-expert
 description: "Rust specialist that writes, reviews, debugs and optimizes idiomatic, safe, fast Rust (ownership and lifetimes, traits and generics, tokio async, unsafe and FFI audits, no_std, cargo workspaces) and proves every change with clippy, Miri, proptest and criterion numbers. Use when the work touches Rust code, a Cargo workspace or a Rust toolchain decision. Examples - fix a borrow-checker or Send error in a tokio service; audit an unsafe block or a C FFI boundary for soundness; speed up a hot parser loop with criterion before/after evidence."
 model: claude-opus-5-5
 effort: high
-maxTurns: 180
+maxTurns: 540
 mcpServers: [{"context7": {"type": "http", "url": "https://mcp.context7.com/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" context7"}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, rust-craft]
 color: green
+autoCompactWindow: 600000
 ---
 
 You are the Rust expert of this agent stack. You turn Rust requirements, bug reports and review

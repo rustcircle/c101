@@ -9,10 +9,17 @@ Storage (outside the repo, never committed):
         history.jsonl               one summary line per session (per-agent runs, turns, caps, errors,
                                     tokens, effort, current vs recommended values) for analysis over time
 
-Lifecycle: SessionEnd ingests the session, updates the posteriors and appends its history line
-(``run_after_session``); SessionStart applies the pending recommendations to agent frontmatter
-(``start_of_session``), so agent files never change while a session runs. ``apply_on`` in
-config/learning.json moves applying to session end or turns it off; ``auto_apply: false`` disables it.
+Lifecycle: SessionEnd ingests the session, updates the posteriors, appends its history line and,
+with ``apply_on: "session_end"`` (the shipped setting), applies the recommendations to agent
+frontmatter (``run_after_session``).  Claude Code loads agent definitions when a session starts and
+re-reads a changed file from the next turn once its file watcher is up (a write made during startup can be
+missed), so values written at session end are on disk before the next session loads them and reach a
+concurrently running session on its next turn.  SessionStart runs a catch-up apply (stack/hooks.py
+``_apply_learned``) for a SessionEnd run that never finished.  ``apply_on: "session_start"`` (legacy)
+applies only then; ``"never"`` or ``auto_apply: false`` disables applying.  ``apply()`` re-reads each agent
+file, re-checks every downward move and logs only writes that changed the file, so a recommendation that
+went stale never lowers a newer value and a repeated apply is silent.  Because files can change mid-session,
+the maxTurns in force for a run is the one recorded when it was spawned (``_limit_at_run``).
 """
 from __future__ import annotations
 
@@ -21,7 +28,7 @@ import json
 import os
 import statistics
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from .. import frontmatter, paths
 from . import ingest
@@ -59,30 +66,163 @@ def _agent_current(name: str) -> Dict[str, object]:
 
 
 # --------------------------------------------------------------------------- #
+# Where an agent's limit comes from, best evidence first.  Claude Code watches .claude/agents and
+# re-reads a changed definition from the next turn, so a file can change at any moment during a session and
+# only the value read when the agent was spawned is the one that was enforced for it.  A write made before
+# the watcher starts at session startup can be missed (2026-10-26: 40 written at session start, the harness
+# enforced 45), hence the change-history estimate below: changes within BOUNDARY_GRACE_S of a session's
+# start are ambiguous and the smaller value is taken.
+#   harness_notice  the harness's own "stopped at its N-turn limit" notice (exact)
+#   spawn_record    the file's maxTurns when pre-agent saw the spawn (data/spawns/<sid>.jsonl)
+#   stop_frontmatter  the file's maxTurns at SubagentStop (wrong if the file changed during the run)
+#   change_history / frontmatter_at_first_ingest / legacy_*  estimates made at ingest
+BOUNDARY_GRACE_S = 120.0
+_STOP_BASES = ("spawn_record", "stop_frontmatter")
+
+
+def _spawn_records(session_id: Optional[str]) -> Dict[str, dict]:
+    """tool_use_id -> spawn-time record written by the pre-agent hook for this session."""
+    out: Dict[str, dict] = {}
+    if not session_id:
+        return out
+    try:
+        with open(os.path.join(paths.data_dir(), "spawns", "%s.jsonl" % session_id), encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                if rec.get("tool_use_id"):
+                    out[rec["tool_use_id"]] = rec
+    except OSError:
+        pass
+    return out
+
+
+def _limit_history() -> Dict[str, List[Tuple[float, int]]]:
+    """agent -> [(ts, maxTurns)] written by the learner (changes.jsonl), oldest first."""
+    out: Dict[str, List[Tuple[float, int]]] = {}
+    try:
+        with open(os.path.join(paths.data_dir(), "changes.jsonl"), encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    c = json.loads(line)
+                    out.setdefault(c["agent"], []).append((float(c["ts"]), int(c["updates"]["maxTurns"])))
+                except (ValueError, KeyError, TypeError):
+                    continue
+    except OSError:
+        pass
+    for v in out.values():
+        v.sort()
+    return out
+
+
+def _limit_from_history(points: List[Tuple[float, int]], session_start: Optional[float]) -> Optional[int]:
+    """maxTurns in force for a session that started at ``session_start``, from (ts, value) points.
+
+    The last value set before the session started, lowered by any value set within BOUNDARY_GRACE_S of
+    its start (a missed cap biases maxTurns down; a spurious one only nudges it up).  None when no point
+    precedes or straddles the start.
+    """
+    if not points or session_start is None:
+        return None
+    lo, hi = session_start - BOUNDARY_GRACE_S, session_start + BOUNDARY_GRACE_S
+    before = [v for t, v in points if t < lo]
+    near = [v for t, v in points if lo <= t <= hi]
+    if not before and not near:
+        return None
+    return min(([before[-1]] if before else []) + near)
+
+
+def _limit_at_run(r: dict, prev: Optional[dict], ev: Optional[dict], fm_now: Optional[int],
+                  history: List[Tuple[float, int]], session_start: Optional[float],
+                  spawn: Optional[dict] = None) -> Tuple[Optional[int], str]:
+    """(maxTurns in force when this run happened, how it was determined).
+
+    Priority: the harness's turn-limit notice (exact); the spawn-time record (``spawn``, or a SubagentStop
+    record whose ``limit_basis`` says it came from one); the frontmatter value the SubagentStop hook read at
+    stop time; the value decided when the run was first ingested (kept across re-ingests, so later limit
+    changes never reclassify it); for a new run the frontmatter now unless the learner changed the limit
+    since the session started; for a legacy record (stored before limit_source existed, its limit re-read
+    at every ingest) the change history at its session start, else its stored ingest-time value.  The
+    returned label is the true basis, never a generic "stop_event".
+    """
+    if r.get("limit_notice"):
+        return int(r["limit_notice"]), "harness_notice"
+    ev_limit = next((int(ev[k]) for k in ("max_turns", "maxTurns", "limit_max_turns")
+                     if ev and str(ev.get(k) or "").isdigit()), None)
+    ev_basis = (ev or {}).get("limit_basis")
+    if spawn and str(spawn.get("limit_max_turns") or "").isdigit():
+        return int(spawn["limit_max_turns"]), "spawn_record"
+    if ev_limit is not None and ev_basis == "spawn_record":
+        return ev_limit, "spawn_record"
+    if ev_limit is not None:
+        return ev_limit, ev_basis if ev_basis in _STOP_BASES else "stop_event"
+    if prev and prev.get("limit_source") and prev.get("limit_max_turns") is not None:
+        return int(prev["limit_max_turns"]), prev["limit_source"]
+    hist = _limit_from_history(history, session_start)
+    if prev is None:  # first ingest of this run
+        changed_since = session_start is not None and any(t >= session_start - BOUNDARY_GRACE_S for t, _ in history)
+        if fm_now is not None and not changed_since:
+            return fm_now, "frontmatter_at_first_ingest"
+        if hist is not None:
+            return (min(hist, fm_now) if fm_now is not None else hist), "change_history"
+        return fm_now, "frontmatter_at_first_ingest"
+    if hist is not None:
+        return hist, "legacy_change_history"
+    stored = prev.get("limit_max_turns")
+    if stored not in (None, ""):
+        return int(stored), "legacy_ingest_time"
+    return fm_now, "legacy_frontmatter_now"
+
+
+def _read_session_obs(path: str) -> Dict[str, dict]:
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
 def ingest_transcript(transcript_path: str, main_agent: Optional[str] = None) -> int:
-    """Ingest one session (main + subagents).  Idempotent: rewrites that session's file."""
+    """Ingest one session (main + subagents).  Idempotent: rewrites that session's file.
+
+    The turn limit in force for each run is decided once (see ``_limit_at_run``) and stored with the
+    record, so ``capped`` never depends on what the frontmatter says at a later re-ingest.
+    """
     main_agent = main_agent or os.environ.get("CLAUDE_STACK_MAIN_AGENT") or "main"
     records = ingest.ingest_session(transcript_path, main_agent=main_agent)
     if not records:
         return 0
+    sid = records[0].get("session_id") or os.path.basename(ingest.session_dir_for(transcript_path))
+    obs_path = os.path.join(_obs_dir(), "%s.json" % sid)
+    previous = _read_session_obs(obs_path)
     stops = _stop_events(records[0].get("session_id"))
-    limits: Dict[str, Optional[int]] = {}
+    spawns = _spawn_records(records[0].get("session_id"))
+    history = _limit_history()
+    starts = [r["started_at"] for r in records if r.get("started_at")]
+    session_start = min(starts) if starts else None
+    fm: Dict[str, Optional[int]] = {}
     for r in records:
         t = r["agent_type"]
-        if t not in limits:
+        if t not in fm:
             cur = _agent_current(t).get("maxTurns")
-            limits[t] = int(cur) if cur not in (None, "") else None
-        lim = limits[t]
-        r["limit_max_turns"] = lim
-        rounds = r.get("tool_rounds", r["turns"])
-        r["capped"] = bool(r.get("max_turns_hit") or (lim is not None and rounds >= lim))
+            fm[t] = int(cur) if str(cur or "").isdigit() else None
         ev = stops.get(r.get("agent_id"))
+        if ev and ev.get("stop_reason") in ingest.MAX_TURNS_STOP_REASONS:
+            r["max_turns_hit"], r["stop_reason"] = True, ev["stop_reason"]
+        lim, src = _limit_at_run(r, previous.get(r.get("agent_id")), ev, fm[t], history.get(t, []),
+                                 session_start, spawn=spawns.get(r.get("tool_use_id")))
+        r["limit_max_turns"], r["limit_source"] = lim, src
+        rounds = r.get("tool_rounds", r["turns"])
+        # Every real cut-off seen (20 of 20, 2026-10-26) had exactly ``lim`` rounds; fewer is a finish.
+        r["capped"] = bool(r.get("max_turns_hit") or (lim is not None and rounds >= lim))
         if ev and ev.get("effort"):
             r["effort_transcript"] = r.get("effort")
             r["effort"] = ev["effort"]  # level in effect per the SubagentStop payload (authoritative)
         r["ingested_at"] = time.time()
-    sid = records[0].get("session_id") or os.path.basename(ingest.session_dir_for(transcript_path))
-    _write_json(os.path.join(_obs_dir(), "%s.json" % sid), {r["agent_id"]: r for r in records})
+    _write_json(obs_path, {r["agent_id"]: r for r in records})
     return len(records)
 
 
@@ -200,7 +340,10 @@ def global_budgets() -> dict:
 
 
 def apply(dry_run: bool = False, only: Optional[List[str]] = None) -> List[dict]:
-    """Write recommended maxTurns/effort into agent frontmatter (managed agents only)."""
+    """Write recommended maxTurns/effort/autoCompactWindow into agent frontmatter (managed agents only).
+
+    Every value is compared with the file as it is now, and only a write that changed the file is
+    returned and logged, so a SessionStart catch-up after the SessionEnd apply reports nothing."""
     cfg = load_config()
     path = os.path.join(paths.data_dir(), "recommendations.json")
     if not os.path.exists(path):
@@ -214,30 +357,82 @@ def apply(dry_run: bool = False, only: Optional[List[str]] = None) -> List[dict]
         if not rec.get("managed") or rec.get("status") != "ok" or not rec.get("path"):
             continue
         upd: Dict[str, Optional[str]] = {}
+        held: Dict[str, str] = {}
+        try:
+            on_disk = frontmatter.read(rec["path"])
+        except (OSError, frontmatter.FrontmatterError):
+            continue
         mt = rec.get("maxTurns", {})
-        if mt.get("recommended") and mt.get("recommended") != mt.get("current"):
-            upd["maxTurns"] = str(mt["recommended"])
+        want, why = _max_turns_to_write(name, rec, _int_or_none(on_disk.get("maxTurns")), cfg)
+        if want is not None:
+            upd["maxTurns"] = str(want)
+        elif why:
+            held["maxTurns"] = why
         ef = rec.get("effort", {})
-        if ef.get("recommended") in EFFORT_LEVELS and ef.get("recommended") != ef.get("current"):
-            upd["effort"] = ef["recommended"]
+        if ef.get("recommended") in EFFORT_LEVELS and ef.get("recommended") != str(on_disk.get("effort") or ""):
+            upd["effort"] = ef["recommended"]  # judged against the file as it is now, like the others
         acw = (rec.get("budget") or {}).get("autoCompactWindow")
-        if acw and cfg.get("apply_compact_window", True):
-            upd["autoCompactWindow"] = str(acw)
+        acw_disk = _int_or_none(on_disk.get("autoCompactWindow"))
+        if acw and cfg.get("apply_compact_window", True) and (acw_disk is None or int(acw) > acw_disk):
+            upd["autoCompactWindow"] = str(acw)  # raise-only, judged against the file as it is now
+        upd = {k: v for k, v in upd.items() if str(on_disk.get(k) or "") != str(v)}
         if not upd:
             continue
         change = {"agent": name, "path": rec["path"], "updates": upd, "ts": time.time(),
                   "reasons": {"maxTurns": mt.get("reason"), "effort": ef.get("reason")},
                   "n_eff": rec.get("turns", {}).get("n_eff")}
+        if held:
+            change["held"] = held
         if not dry_run:
-            frontmatter.update_file(rec["path"], upd)
+            if not frontmatter.update_file(rec["path"], upd):
+                continue  # nothing changed on disk: nothing to log or announce
             with open(os.path.join(paths.data_dir(), "changes.jsonl"), "a", encoding="utf-8") as fh:
                 fh.write(json.dumps(change) + "\n")
         changes.append(change)
     return changes
 
 
+def _int_or_none(v) -> Optional[int]:
+    return int(v) if str(v or "").strip().isdigit() else None
+
+
+def _max_turns_to_write(name: str, rec: dict, on_disk: Optional[int], cfg: dict) -> Tuple[Optional[int], str]:
+    """(maxTurns to write, or None; why a move was refused).
+
+    The recommendation is judged against the agent file as it is now, not the ``current`` value it
+    was computed from: raising is always allowed; lowering only when the recommendation was computed
+    against the value on disk (otherwise it is stale: the user or another run changed the file since)
+    and every downward guard of ``model.recommend_agent`` still holds, re-checked here from the stored
+    evidence (missing evidence refuses the move).
+    """
+    mt = rec.get("maxTurns") or {}
+    want = _int_or_none(mt.get("recommended"))
+    if want is None or want == on_disk:
+        return None, ""
+    if on_disk is None or want > on_disk:
+        return want, ""
+    if _int_or_none(mt.get("current")) != on_disk:
+        return None, "stale: computed against %s, file now %s" % (mt.get("current"), on_disk)
+    bounds = dict(cfg["default_bounds"])
+    bounds.update(cfg.get("agents", {}).get(name, {}))
+    lo = int(bounds.get("maxTurns", [1, 0])[0])
+    t = rec.get("turns") or {}
+    if want < lo:
+        return None, "below lower bound %d" % lo
+    if t.get("n_eff") is None or float(t["n_eff"]) < cfg.get("min_obs_lower", 8):
+        return None, "lowering needs n_eff >= %s" % cfg.get("min_obs_lower", 8)
+    if t.get("last_capped") is not False:
+        return None, "most recent run hit the cap (or unknown)"
+    if t.get("capped_frac") is not None and float(t["capped_frac"]) > cfg.get("max_capped_frac_lower", 0.10):
+        return None, "too many capped runs to lower"
+    if t.get("lower_floor") is not None and want < int(t["lower_floor"]):
+        return None, "below 1.5x the longest uncapped run"
+    return want, ""
+
+
 def apply_on(cfg: Optional[dict] = None) -> str:
-    """When learned values are written: 'session_start' (default), 'session_end' or 'never'."""
+    """When learned values are written: 'session_end' (shipped config), 'session_start' (legacy code
+    default when the key is missing) or 'never'."""
     cfg = cfg or load_config()
     if not cfg.get("enabled", True) or not cfg.get("auto_apply", True):
         return "never"
@@ -311,8 +506,8 @@ def record_session(session_id: str) -> Optional[dict]:
 def run_after_session(transcript_path: Optional[str]) -> dict:
     """SessionEnd: ingest this session, update posteriors and record its history line.
 
-    Values are applied at the next session start (``start_of_session``) unless ``apply_on`` is
-    'session_end'.
+    With ``apply_on: "session_end"`` (shipped) the values are applied here, before the next session
+    loads its agent definitions; with ``"session_start"`` at the next session start.
     """
     cfg = load_config()
     if not cfg.get("enabled", True):
@@ -328,7 +523,9 @@ def run_after_session(transcript_path: Optional[str]) -> dict:
 
 
 def start_of_session() -> List[dict]:
-    """SessionStart: write the pending recommendations into agent frontmatter."""
+    """Legacy ``apply_on: "session_start"`` apply (``stack learn start``).  The SessionStart hook's
+    catch-up apply is stack/hooks.py ``_apply_learned``; Claude Code reads a changed agent file from the
+    next turn, but may miss one written during its startup, so the next session is the sure point."""
     return apply() if apply_on() == "session_start" else []
 
 

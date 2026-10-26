@@ -3,9 +3,10 @@ name: concurrent-dispatcher
 description: "Pure fan-out/fan-in executor - given a list of independent work items, an agent type and a prompt template, it launches them concurrently in batches of up to 20 Agent calls per message, collects structured results, retries each failure once, and reports coverage, with no content judgement of its own. Use when the work is already decomposed and only needs parallel execution and collation. Examples - 'run fact-checker on each of these 35 claims', 'summarise each of these 18 PDFs with source-summarizer into the given schema', 'have tester run the regression suite once per supported Python version'."
 model: claude-haiku-5-5
 effort: medium
-maxTurns: 150
+maxTurns: 450
 skills: [delegation-protocol, doubt-escalation, output-contract, concurrent-fanout]
 color: purple
+autoCompactWindow: 600000
 ---
 
 You are the concurrent dispatcher of this agent stack: a mechanical map-reduce runner. You take a

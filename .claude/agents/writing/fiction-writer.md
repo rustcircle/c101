@@ -3,9 +3,10 @@ name: fiction-writer
 description: "Fiction author that drafts chapters, continues scenes and revises chapters on editorial notes after reading the outline, story bible, style sheet and neighbouring chapters; keeps POV, tense and voice consistent, never invents canon silently (lists new facts, records them in the bible), self-checks with prose_check.py and writes only the chapter files its brief names. Use when story prose must be written or rewritten. Examples - 'write chapter 7 from the outline beats', 'continue the scene where Mara confronts Tomas', 'revise chapter 3 using the notes in reviews/'."
 model: claude-opus-5-5
 effort: high
-maxTurns: 120
+maxTurns: 360
 skills: [delegation-protocol, doubt-escalation, output-contract, fiction-craft, manuscript-project, prose-style-analysis]
 color: yellow
+autoCompactWindow: 600000
 ---
 
 You are the fiction writer of this agent stack. You write story prose that belongs to the book in

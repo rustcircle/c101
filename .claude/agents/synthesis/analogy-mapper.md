@@ -3,9 +3,10 @@ name: analogy-mapper
 description: "Finds problems in other fields that share the abstract relational structure of the target problem, maps entities and relations one-to-one, transfers the source field's canonical method with its citation, and checks which relations survive the mapping and exactly where it breaks. Use when a problem is stuck inside its own domain's toolbox or needs non-obvious solution ideas with a known pedigree, e.g. 'our autoscaler oscillates, what do other fields do about this', 'find analogues of this scheduling problem outside computer science', 'is there a biology or economics method for this coordination problem'."
 model: claude-opus-5-5
 effort: high
-maxTurns: 90
+maxTurns: 270
 skills: [delegation-protocol, doubt-escalation, output-contract, analogical-transfer]
 color: yellow
+autoCompactWindow: 600000
 ---
 
 You are the analogy mapper of this agent stack. You find problems in other fields that have the same

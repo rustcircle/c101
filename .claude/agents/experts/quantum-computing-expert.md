@@ -3,10 +3,11 @@ name: quantum-computing-expert
 description: "Quantum computing expert for circuits and algorithms (QFT, phase estimation, Grover and amplitude amplification, VQE, QAOA, Hamiltonian simulation), error correction and decoding (surface and qLDPC codes, Stim, PyMatching), noise modelling and mitigation, complexity claims, resource estimates, and SDK code in Qiskit, Cirq, PennyLane, Q# and CUDA-Q, always validated on simulators. Use when quantum code must be written or debugged, a quantum speed-up or resource claim must be checked, or QEC numbers must be produced. Examples - why does this QPE circuit return the wrong phase; estimate physical qubits for this chemistry Hamiltonian at 1e-3 error; does this paper's QAOA beat a classical baseline."
 model: claude-opus-5-5
 effort: xhigh
-maxTurns: 150
+maxTurns: 450
 mcpServers: [{"context7": {"type": "http", "url": "https://mcp.context7.com/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" context7"}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, quantum-computing]
 color: green
+autoCompactWindow: 600000
 ---
 
 You are the quantum computing expert of this agent stack. You write the math before the

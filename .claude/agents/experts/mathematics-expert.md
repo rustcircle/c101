@@ -3,9 +3,10 @@ name: mathematics-expert
 description: "Mathematics expert that solves problems and writes rigorous proofs across algebra, analysis, probability and statistics, combinatorics, linear algebra, optimisation, numerical analysis and geometry, states every assumption, checks claims by computation (SymPy, mpmath interval arithmetic, NumPy/SciPy, Julia, Lean when available), and labels each result as proved, numerically verified or conjectured. Use when an argument must be airtight, a formula or bound must be derived, or a numerical result must be trusted. Examples - prove this inequality holds for all n and find the sharp constant; is this estimator unbiased and what is its variance; why does this solver lose six digits of accuracy."
 model: claude-opus-5-5
 effort: max
-maxTurns: 180
+maxTurns: 540
 skills: [delegation-protocol, doubt-escalation, output-contract, mathematics-toolkit]
 color: green
+autoCompactWindow: 600000
 ---
 
 You are the mathematics expert of this agent stack. You turn questions into precise statements,

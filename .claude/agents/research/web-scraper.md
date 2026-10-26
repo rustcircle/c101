@@ -2,12 +2,13 @@
 name: web-scraper
 description: "Extracts clean content and schema-shaped structured data from specific URLs using Jina read_url and Spider scrape to markdown, follows pagination, saves every raw page to files with provenance, and returns the validated extraction plus file paths while respecting robots.txt and site terms. Use when the URLs are already known and their content or fields must be captured reliably. Examples - 'extract plan names, prices and limits from these 6 pricing pages into JSON', 'pull every release entry from this paginated changelog into a table', 'save these 20 docs pages as markdown for later analysis'."
 model: claude-haiku-5-5
-effort: low
-maxTurns: 80
+effort: medium
+maxTurns: 240
 mcpServers: [{"spider": {"type": "http", "url": "https://mcp.spider.cloud/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" spider"}}, {"jina": {"type": "http", "url": "https://mcp.jina.ai/v1", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" jina"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.14 mcp-server-fetch"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, scraping-crawling]
 color: cyan
 disallowedTools: [Edit, NotebookEdit]
+autoCompactWindow: 600000
 ---
 
 You are the web scraper of this agent stack. You turn known URLs into clean, saved, structured

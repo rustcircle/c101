@@ -288,8 +288,8 @@ installed as the `stack` script (`[project.scripts]` in `pyproject.toml`).
 | `learn update` | `--agent A` (repeatable) | recompute posteriors into `recommendations.json` and `budgets.json` | 0 |
 | `learn apply` | `--dry-run`, `--agent A` | write recommended `maxTurns`, `effort`, `autoCompactWindow` into managed agents; log to `changes.jsonl` | 0 |
 | `learn report` | `--agent A`, `--json` | table: agent, n, gamma, maxTurns cur->rec, effort cur->rec, P(fail), output tokens [min..max] | 1 if no recommendations yet |
-| `learn run` | `--transcript P` | ingest + update + record the session in `history.jsonl` under `learn.lock` (waits); applies only with `apply_on: "session_end"`; the SessionEnd job; prints JSON | 0 |
-| `learn start` | | apply pending learned values now (what the SessionStart hook does when `apply_on` is `"session_start"`) | 0 |
+| `learn run` | `--transcript P` | ingest + update + record the session in `history.jsonl` under `learn.lock` (waits); applies with `apply_on: "session_end"` (the default); the SessionEnd job; prints JSON | 0 |
+| `learn start` | | apply pending learned values now (the SessionStart catch-up) | 0 |
 | `learn history` | `--agent A`, `--since-days N`, `--by week\|day\|session`, `--json` | per-agent trend rows per period: sessions, runs, turns50, max turns, cap rate, tool errors, maxTurns and effort cur->rec; `--json` adds tokens per run | 0 |
 | `hook NAME` | | run a hook handler on the JSON read from stdin: `pre-agent`, `subagent-stop`, `session-start`, `session-end`, `prompt-submit`, `model-switch`; fail-open | 0; `model-switch` exits 2 to block |
 | `depth` | `[SESSION_ID]` (prefix) | spawn statistics of the last 10 sessions: spawns, max depth, spawns per depth | 0 |
@@ -448,8 +448,9 @@ The token accounting, the levels and the raise-only learned limits are in [Token
 Bayesian self-tuning (`stack/learn/`).
 
 Every key, its default and meaning, and the per-agent bounds are in
-[Learner configuration reference](learning.md#learner-configuration-reference). `apply_on` (`"session_start"`, the
-default, `"session_end"` or `"never"`) sets when learned values are written; agent files never change mid-session.
+[Learner configuration reference](learning.md#learner-configuration-reference). `apply_on` (`"session_end"`, the
+default, `"session_start"` or `"never"`) sets when learned values are written; agent files never change mid-session
+and values written at session end are what the next session loads (a running session re-reads a changed file from its next turn).
 `"auto_apply": false` or `"enabled": false` stops all changes (`enabled: false` also makes `learn run` a no-op);
 `learn: false` in an agent's bounds freezes that agent.
 
@@ -544,7 +545,7 @@ under `~/.claude`.
 | `.stack/calibration/ledger.jsonl` | synthesis and aggregation agents | resolved forecasts used for calibration weights |
 | `~/.claude/stack` | installer | symlink to the repo |
 | `~/.claude/stack.env` | you | API keys and image endpoints (mode 0600; denied to Read) |
-| `~/.claude/stack-data/` (`obs/`, `recommendations.json`, `budgets.json`, `history.jsonl`, `changes.jsonl`, `stops/`, `sessions/`, `last_ingest`, `last_update`, `learn.lock`, `learn.log`, `hook-errors.log`) | learner and hooks | described file by file in [Files in `~/.claude/stack-data/`](learning.md#files-in-claudestack-data) |
+| `~/.claude/stack-data/` (`obs/`, `recommendations.json`, `budgets.json`, `history.jsonl`, `changes.jsonl`, `stops/`, `spawns/`, `sessions/`, `last_ingest`, `last_update`, `learn.lock`, `learn.log`, `hook-errors.log`) | learner and hooks | described file by file in [Files in `~/.claude/stack-data/`](learning.md#files-in-claudestack-data) |
 | `~/.claude/projects/<project>/<session>.jsonl`, `<session>/subagents/**/agent-<id>.jsonl` + `.meta.json` | Claude Code | transcripts the learner and the budget scanner read (`spawnDepth`, `agentType`) |
 | `~/.claude/settings.json` (+ `.bak-<unix-seconds>`) | installer with `--user`, `--main-agent`, `--no-main-agent` | merged env and hooks; optional model allowlist and `agent` |
 | `~/.claude/agents/stack/`, `~/.claude/skills/<name>`, `~/.claude/workflows/<name>.js` | installer with `--user` | symlinks into the repo |
@@ -622,7 +623,7 @@ connectivity or key values (use `/mcp` and `bin/stack keys`).
 
 | Checker | Errors | Warnings |
 |---|---|---|
-| agents (`.claude/agents/**.md`) | unparsable frontmatter; missing, invalid (`:`, leading `-`, over 256 chars) or duplicate `name`; `description` under 40 chars; keys outside `name, description, tools, disallowedTools, model, effort, maxTurns, mcpServers, skills, memory, hooks, permissionMode, isolation, background, color, initialPrompt, omitClaudeMd, autoCompactWindow, experimental`; unknown model alias (not `claude-*`); effort not in `low..max`; `maxTurns` not 1..2000; `autoCompactWindow` not 100000..1000000; color not in `red, blue, green, yellow, purple, orange, pink, cyan`; a `mcpServers` name not in `.mcp.json`, `config/mcp.servers.json` or the built-ins `computer-use`, `claude-in-chrome`; an inline entry not in the catalog; a catalog server referenced by name or an inline copy that differs from the catalog (`run bin/stack mcp sync`); missing skills; body under 600 chars | file stem differs from `name`; unrecognised tool names; no `## Output` section |
+| agents (`.claude/agents/**.md`) | unparsable frontmatter; missing, invalid (`:`, leading `-`, over 256 chars) or duplicate `name`; `description` under 40 chars; keys outside `name, description, tools, disallowedTools, model, effort, maxTurns, mcpServers, skills, memory, hooks, permissionMode, isolation, background, color, initialPrompt, omitClaudeMd, autoCompactWindow, experimental`; unknown model alias (not `claude-*`); effort not in `low..max`; `maxTurns` not 1..3000; `autoCompactWindow` not 100000..1000000; color not in `red, blue, green, yellow, purple, orange, pink, cyan`; a `mcpServers` name not in `.mcp.json`, `config/mcp.servers.json` or the built-ins `computer-use`, `claude-in-chrome`; an inline entry not in the catalog; a catalog server referenced by name or an inline copy that differs from the catalog (`run bin/stack mcp sync`); missing skills; body under 600 chars | file stem differs from `name`; unrecognised tool names; no `## Output` section |
 | tiers (`config/models.json`) | unreadable file; a missing tier; agent without an entry; unknown tier; frontmatter `model` not one of the tier models | `model` differs from its tier (run `agents tiers --apply`); entry for an unknown agent |
 | packs (`config/packs.json`) | unknown `requires`; missing skill or agent; `hub` not in `skills`; a skill in no pack; a core agent preloading a non-core skill | |
 | skills (`.claude/skills/<name>/SKILL.md`) | no `SKILL.md`; `name` differs from the directory; description under 40 chars; unknown keys (allowed: `name, description, when_to_use, argument-hint, arguments, disable-model-invocation, user-invocable, allowed-tools, disallowed-tools, model, effort, context, agent, background, hooks, paths, shell, metadata, license, compatibility`); bad effort; `context` other than `fork`; body under 400 chars; broken links into `references/`, `scripts/`, `examples/`, `assets/` | over 500 lines |
@@ -663,7 +664,7 @@ causes and fixes are in `.claude/skills/stack-authoring/references/doctor-errors
 | `the <agent> main thread must run at effort <level>` | `/effort` changed the main thread's effort (hooks cannot block it) | run the `/effort` command the note names |
 | a new model id set through `ADVANCED_MODEL` is rejected interactively | `availableModels` in `.claude/settings.json` is an exact list | add the id there as well |
 | hooks seem to do nothing | they fail open on internal errors | `tail ~/.claude/stack-data/hook-errors.log` |
-| learner changes nothing | `auto_apply`/`enabled` false, `apply_on: "never"`, no new session started since the update, fewer than 3 (turns) or 5 (effort) effective runs, `learn: false`, or inside the hysteresis band | `bin/stack learn report` shows the reason per agent |
+| learner changes nothing | `auto_apply`/`enabled` false, `apply_on: "never"`, no session ended since the update (`apply_on: "session_end"`), fewer than 3 (turns) or 5 (effort) effective runs, `learn: false`, or inside the hysteresis band | `bin/stack learn report` shows the reason per agent |
 | `no recommendations yet` | nothing ingested | `bin/stack learn ingest --all && bin/stack learn update` |
 | `ingested 0 agent runs` with `--transcript` | relative path resolved against the repo (`bin/stack` runs from there) | pass an absolute path |
 | skills still listed after `packs apply` | skill list cached by the session | `/reload-skills` or restart |

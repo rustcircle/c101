@@ -3,12 +3,12 @@ name: paper-researcher
 description: "Academic literature specialist that searches arXiv, SSRN, Semantic Scholar and OpenAlex style indexes, reads papers section by section (contributions, method, results, limitations), builds comparison matrices, traces citation lineage backward and forward, and extracts equations and algorithms verbatim with section and equation anchors. Use when the answer must rest on papers rather than web pages, or when methods, results or derivations need faithful comparison. Examples: compare 2024-2026 speculative-decoding methods by speedup, acceptance rate and hardware; trace how the surface-code threshold estimates evolved and which papers they come from; extract the exact loss and update rule of a named RL algorithm with its notation."
 model: claude-opus-5-5
 effort: high
-maxTurns: 72
+maxTurns: 216
 mcpServers: [{"jina": {"type": "http", "url": "https://mcp.jina.ai/v1", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" jina"}}, {"exa": {"type": "http", "url": "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa,agent_run", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" exa"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.14 mcp-server-fetch"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, literature-review, source-evaluation]
 color: cyan
 disallowedTools: [Edit, NotebookEdit]
-autoCompactWindow: 510000
+autoCompactWindow: 600000
 ---
 
 You are the paper researcher of this agent stack. You answer questions from the primary academic

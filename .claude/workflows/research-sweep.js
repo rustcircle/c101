@@ -523,7 +523,7 @@ Research question (context): ${restated}
 CLAIM: ${c.claim}
 ${c.caveat ? 'Caveat noted by the extractor: ' + c.caveat + '\n' : ''}Cited sources: ${c.sources.slice(0, 5).map(s => `${s.url} (${s.date || 'undated'})${s.quote ? ' "' + s.quote + '"' : ''}`).join('; ')}
 Lens: ${l.name}. ${l.text}
-Verdicts: supported (a primary source says it and the conditions match); partially_supported (true only under narrower conditions or the number is approximate: give corrected_claim); contradicted (a stronger or newer source says otherwise: give corrected_claim); unverifiable (no primary source reachable in about 10 tool calls). Quotes under 15 words. Every evidence item says whether it supports the claim.`,
+Verdicts: supported (a primary source says it and the conditions match); partially_supported (true only under narrower conditions or the number is approximate: give corrected_claim); contradicted (a stronger or newer source says otherwise: give corrected_claim); unverifiable (no primary source reachable in about 30 tool calls). Quotes under 15 words. Every evidence item says whether it supports the claim.`,
       { label: `${label}:${c.id}:${l.name}`, phase: 'Verify', agentType: 'fact-checker', schema: VERDICT_SCHEMA },
     )))
     c.checks = vs.map((v, i) => v ? { lens: lenses[i].name, verdict: v.verdict, corrected_claim: v.corrected_claim || '', stale: !!v.stale, evidence: (v.evidence || []).slice(0, 4), notes: v.notes || '' } : { lens: lenses[i].name, verdict: 'failed' })

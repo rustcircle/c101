@@ -5,67 +5,67 @@ from the tiers in `config/models.json`; `maxTurns` and `effort` are tuned by the
 `config/learning.json` bounds.
 
 | Group | Agent | Model | Effort | maxTurns | MCP servers | Skills |
-| experts | `computer-graphics-expert` | claude-opus-5-5 | high | 150 | context7 | delegation-protocol, doubt-escalation, output-contract, computer-graphics |
-| experts | `computer-science-expert` | claude-opus-5-5 | xhigh | 150 | - | delegation-protocol, doubt-escalation, output-contract, cs-foundations |
-| experts | `cpp-expert` | claude-opus-5-5 | high | 180 | context7 | delegation-protocol, doubt-escalation, output-contract, cpp-craft |
-| experts | `go-expert` | claude-sonnet-5-5 | high | 180 | context7 | delegation-protocol, doubt-escalation, output-contract, go-craft |
-| experts | `graphic-design-expert` | claude-opus-5-5 | high | 120 | image | delegation-protocol, doubt-escalation, output-contract, graphic-design, image-generation |
-| experts | `haskell-expert` | claude-opus-5-5 | high | 180 | context7 | delegation-protocol, doubt-escalation, output-contract, haskell-craft |
-| experts | `java-expert` | claude-sonnet-5-5 | high | 180 | context7 | delegation-protocol, doubt-escalation, output-contract, java-craft |
-| experts | `julia-expert` | claude-sonnet-5-5 | high | 180 | context7 | delegation-protocol, doubt-escalation, output-contract, julia-craft |
-| experts | `kotlin-expert` | claude-sonnet-5-5 | high | 180 | context7 | delegation-protocol, doubt-escalation, output-contract, kotlin-craft |
-| experts | `mathematics-expert` | claude-opus-5-5 | max | 180 | - | delegation-protocol, doubt-escalation, output-contract, mathematics-toolkit |
-| experts | `physics-expert` | claude-opus-5-5 | xhigh | 150 | - | delegation-protocol, doubt-escalation, output-contract, physics-toolkit |
-| experts | `python-expert` | claude-sonnet-5-5 | high | 180 | context7 | delegation-protocol, doubt-escalation, output-contract, python-craft |
-| experts | `quantum-computing-expert` | claude-opus-5-5 | xhigh | 150 | context7 | delegation-protocol, doubt-escalation, output-contract, quantum-computing |
-| experts | `rust-expert` | claude-opus-5-5 | high | 180 | context7 | delegation-protocol, doubt-escalation, output-contract, rust-craft |
-| experts | `typescript-expert` | claude-sonnet-5-5 | high | 180 | context7 | delegation-protocol, doubt-escalation, output-contract, typescript-craft |
-| image | `image-editor` | claude-sonnet-5-5 | medium | 90 | image | delegation-protocol, doubt-escalation, output-contract, image-editing |
-| image | `image-generator` | claude-sonnet-5-5 | medium | 90 | image | delegation-protocol, doubt-escalation, output-contract, image-generation |
-| image | `vector-artist` | claude-sonnet-5-5 | medium | 90 | image | delegation-protocol, doubt-escalation, output-contract, vector-art |
-| image | `visual-reviewer` | claude-opus-5-5 | high | 80 | image | delegation-protocol, doubt-escalation, output-contract, visual-review |
-| meta | `agent-architect` | claude-opus-5-5 | high | 120 | - | delegation-protocol, doubt-escalation, output-contract, stack-authoring |
-| meta | `stack-tuner` | claude-sonnet-5-5 | medium | 60 | - | delegation-protocol, doubt-escalation, output-contract, stack-tuning |
-| orchestration | `concurrent-dispatcher` | claude-haiku-5-5 | medium | 150 | - | delegation-protocol, doubt-escalation, output-contract, concurrent-fanout |
-| orchestration | `delegator` | claude-opus-5-5 | high | 300 | neural-memory | delegation-protocol, doubt-escalation, output-contract, orchestration-patterns, effort-and-model-selection |
-| orchestration | `ensemble-assembler` | claude-opus-5-5 | high | 180 | - | delegation-protocol, doubt-escalation, output-contract, ensemble-assembly, expert-synthesis |
-| orchestration | `mediator` | claude-opus-5-5 | xhigh | 180 | - | delegation-protocol, doubt-escalation, output-contract, mediator-voting, judge-panel, bayesian-aggregation |
-| orchestration | `mesh-router` | claude-sonnet-5-5 | high | 220 | - | delegation-protocol, doubt-escalation, output-contract, mesh-blackboard |
-| orchestration | `orchestrator` | claude-opus-5-5 | high | 300 | neural-memory | delegation-protocol, doubt-escalation, output-contract, planning-dag, orchestration-patterns, validation-gates |
-| orchestration | `swarm-coordinator` | claude-opus-5-5 | medium | 220 | - | delegation-protocol, doubt-escalation, output-contract, swarm-execution, concurrent-fanout |
-| planning | `architect` | claude-opus-5-5 | xhigh | 120 | context7, neural-memory | delegation-protocol, doubt-escalation, output-contract, planning-dag, judge-panel, red-teaming |
-| planning | `plan-critic` | claude-opus-5-5 | high | 60 | - | delegation-protocol, doubt-escalation, output-contract, red-teaming, planning-dag |
-| planning | `planner` | claude-opus-5-5 | high | 80 | neural-memory | delegation-protocol, doubt-escalation, output-contract, planning-dag, effort-and-model-selection |
-| quality | `adversarial-verifier` | claude-opus-5-5 | high | 90 | - | delegation-protocol, doubt-escalation, output-contract, adversarial-verification |
-| quality | `code-optimizer` | claude-opus-5-5 | high | 150 | - | delegation-protocol, doubt-escalation, output-contract, performance-optimization |
-| quality | `code-quality-analyst` | claude-sonnet-5-5 | medium | 90 | - | delegation-protocol, doubt-escalation, output-contract, code-quality-metrics |
-| quality | `debugger` | claude-opus-5-5 | high | 160 | neural-memory | delegation-protocol, doubt-escalation, output-contract, debugging-method, testing-strategy |
-| quality | `quality-control` | claude-opus-5-5 | medium | 70 | - | delegation-protocol, doubt-escalation, output-contract, validation-gates, source-evaluation |
-| quality | `reviewer` | claude-opus-5-5 | high | 120 | neural-memory | delegation-protocol, doubt-escalation, output-contract, code-review-checklist, adversarial-verification |
-| quality | `security-auditor` | claude-opus-5-5 | high | 120 | - | delegation-protocol, doubt-escalation, output-contract, security-review, adversarial-verification |
-| quality | `tester` | claude-sonnet-5-5 | high | 150 | playwright, desktop-sandbox | delegation-protocol, doubt-escalation, output-contract, testing-strategy, browser-automation, sandboxed-computer-use |
-| quality | `validator` | claude-sonnet-5-5 | medium | 90 | - | delegation-protocol, doubt-escalation, output-contract, validation-gates, testing-strategy |
-| research | `browser-operator` | claude-sonnet-5-5 | medium | 150 | playwright | delegation-protocol, doubt-escalation, output-contract, browser-automation |
-| research | `computer-operator` | claude-sonnet-5-5 | medium | 150 | computer-use, desktop-sandbox | delegation-protocol, doubt-escalation, output-contract, computer-use, sandboxed-computer-use |
-| research | `deep-researcher` | claude-opus-5-5 | high | 240 | exa, jina, spider, fetch | delegation-protocol, doubt-escalation, output-contract, deep-research, web-search-tools, source-evaluation |
-| research | `fact-checker` | claude-sonnet-5-5 | medium | 60 | exa, jina, fetch | delegation-protocol, doubt-escalation, output-contract, source-evaluation, web-search-tools |
-| research | `file-summarizer` | claude-haiku-5-5 | low | 40 | - | delegation-protocol, doubt-escalation, output-contract |
-| research | `paper-researcher` | claude-opus-5-5 | high | 120 | jina, exa, fetch | delegation-protocol, doubt-escalation, output-contract, literature-review, source-evaluation |
-| research | `quick-researcher` | claude-sonnet-5-5 | low | 40 | exa, jina, fetch | delegation-protocol, doubt-escalation, output-contract, quick-research, web-search-tools |
-| research | `source-summarizer` | claude-haiku-5-5 | low | 35 | jina, fetch | delegation-protocol, doubt-escalation, output-contract, source-evaluation |
-| research | `web-crawler` | claude-haiku-5-5 | medium | 120 | spider, fetch | delegation-protocol, doubt-escalation, output-contract, scraping-crawling |
-| research | `web-scraper` | claude-haiku-5-5 | low | 80 | spider, jina, fetch | delegation-protocol, doubt-escalation, output-contract, scraping-crawling |
-| research | `web-searcher` | claude-sonnet-5-5 | low | 50 | exa, jina, fetch | delegation-protocol, doubt-escalation, output-contract, web-search-tools |
-| synthesis | `analogy-mapper` | claude-opus-5-5 | high | 90 | - | delegation-protocol, doubt-escalation, output-contract, analogical-transfer |
-| synthesis | `cross-domain-synthesizer` | claude-opus-5-5 | xhigh | 120 | - | delegation-protocol, doubt-escalation, output-contract, expert-synthesis, analogical-transfer, bayesian-aggregation |
-| synthesis | `debate-moderator` | claude-opus-5-5 | high | 120 | - | delegation-protocol, doubt-escalation, output-contract, structured-debate |
-| synthesis | `expert-panel-chair` | claude-opus-5-5 | high | 180 | - | delegation-protocol, doubt-escalation, output-contract, delphi-method, bayesian-aggregation |
-| synthesis | `first-principles-decomposer` | claude-opus-5-5 | xhigh | 90 | - | delegation-protocol, doubt-escalation, output-contract, first-principles, triz-morphological, tree-of-thought |
-| synthesis | `general-chat` | claude-sonnet-5-5 | low | 35 | - | delegation-protocol, doubt-escalation, output-contract, quick-research |
-| writing | `chat-aide` | claude-sonnet-5-5 | low | 6 | - | delegation-protocol, doubt-escalation, output-contract |
-| writing | `copy-editor` | claude-sonnet-5-5 | medium | 100 | - | delegation-protocol, doubt-escalation, output-contract, copyediting, manuscript-project |
-| writing | `fiction-writer` | claude-opus-5-5 | high | 120 | - | delegation-protocol, doubt-escalation, output-contract, fiction-craft, manuscript-project, prose-style-analysis |
-| writing | `manuscript-reviewer` | claude-opus-5-5 | high | 120 | - | delegation-protocol, doubt-escalation, output-contract, developmental-editing, fiction-craft, manuscript-project |
-| writing | `prose-stylist` | claude-sonnet-5-5 | high | 100 | - | delegation-protocol, doubt-escalation, output-contract, prose-style-analysis, fiction-craft |
-| writing | `writing-project-builder` | claude-sonnet-5-5 | medium | 60 | - | delegation-protocol, doubt-escalation, output-contract, manuscript-project, fiction-craft |
 |---|---|---|---|---|---|---|
+| experts | `computer-graphics-expert` | claude-opus-5-5 | high | 450 | context7 | delegation-protocol, doubt-escalation, output-contract, computer-graphics |
+| experts | `computer-science-expert` | claude-opus-5-5 | xhigh | 450 | - | delegation-protocol, doubt-escalation, output-contract, cs-foundations |
+| experts | `cpp-expert` | claude-opus-5-5 | high | 540 | context7 | delegation-protocol, doubt-escalation, output-contract, cpp-craft |
+| experts | `go-expert` | claude-sonnet-5-5 | high | 540 | context7 | delegation-protocol, doubt-escalation, output-contract, go-craft |
+| experts | `graphic-design-expert` | claude-opus-5-5 | high | 360 | image | delegation-protocol, doubt-escalation, output-contract, graphic-design, image-generation |
+| experts | `haskell-expert` | claude-opus-5-5 | high | 540 | context7 | delegation-protocol, doubt-escalation, output-contract, haskell-craft |
+| experts | `java-expert` | claude-sonnet-5-5 | high | 540 | context7 | delegation-protocol, doubt-escalation, output-contract, java-craft |
+| experts | `julia-expert` | claude-sonnet-5-5 | high | 540 | context7 | delegation-protocol, doubt-escalation, output-contract, julia-craft |
+| experts | `kotlin-expert` | claude-sonnet-5-5 | high | 540 | context7 | delegation-protocol, doubt-escalation, output-contract, kotlin-craft |
+| experts | `mathematics-expert` | claude-opus-5-5 | max | 540 | - | delegation-protocol, doubt-escalation, output-contract, mathematics-toolkit |
+| experts | `physics-expert` | claude-opus-5-5 | xhigh | 450 | - | delegation-protocol, doubt-escalation, output-contract, physics-toolkit |
+| experts | `python-expert` | claude-sonnet-5-5 | high | 540 | context7 | delegation-protocol, doubt-escalation, output-contract, python-craft |
+| experts | `quantum-computing-expert` | claude-opus-5-5 | xhigh | 450 | context7 | delegation-protocol, doubt-escalation, output-contract, quantum-computing |
+| experts | `rust-expert` | claude-opus-5-5 | high | 540 | context7 | delegation-protocol, doubt-escalation, output-contract, rust-craft |
+| experts | `typescript-expert` | claude-sonnet-5-5 | high | 540 | context7 | delegation-protocol, doubt-escalation, output-contract, typescript-craft |
+| image | `image-editor` | claude-sonnet-5-5 | medium | 270 | image | delegation-protocol, doubt-escalation, output-contract, image-editing |
+| image | `image-generator` | claude-sonnet-5-5 | medium | 270 | image | delegation-protocol, doubt-escalation, output-contract, image-generation |
+| image | `vector-artist` | claude-sonnet-5-5 | medium | 270 | image | delegation-protocol, doubt-escalation, output-contract, vector-art |
+| image | `visual-reviewer` | claude-opus-5-5 | high | 240 | image | delegation-protocol, doubt-escalation, output-contract, visual-review |
+| meta | `agent-architect` | claude-opus-5-5 | high | 360 | - | delegation-protocol, doubt-escalation, output-contract, stack-authoring |
+| meta | `stack-tuner` | claude-sonnet-5-5 | medium | 180 | - | delegation-protocol, doubt-escalation, output-contract, stack-tuning |
+| orchestration | `concurrent-dispatcher` | claude-haiku-5-5 | medium | 450 | - | delegation-protocol, doubt-escalation, output-contract, concurrent-fanout |
+| orchestration | `delegator` | claude-opus-5-5 | high | 900 | neural-memory | delegation-protocol, doubt-escalation, output-contract, orchestration-patterns, effort-and-model-selection |
+| orchestration | `ensemble-assembler` | claude-opus-5-5 | high | 540 | - | delegation-protocol, doubt-escalation, output-contract, ensemble-assembly, expert-synthesis |
+| orchestration | `mediator` | claude-opus-5-5 | xhigh | 540 | - | delegation-protocol, doubt-escalation, output-contract, mediator-voting, judge-panel, bayesian-aggregation |
+| orchestration | `mesh-router` | claude-sonnet-5-5 | high | 660 | - | delegation-protocol, doubt-escalation, output-contract, mesh-blackboard |
+| orchestration | `orchestrator` | claude-opus-5-5 | high | 900 | neural-memory | delegation-protocol, doubt-escalation, output-contract, planning-dag, orchestration-patterns, validation-gates |
+| orchestration | `swarm-coordinator` | claude-opus-5-5 | medium | 660 | - | delegation-protocol, doubt-escalation, output-contract, swarm-execution, concurrent-fanout |
+| planning | `architect` | claude-opus-5-5 | xhigh | 360 | context7, neural-memory | delegation-protocol, doubt-escalation, output-contract, planning-dag, judge-panel, red-teaming |
+| planning | `plan-critic` | claude-opus-5-5 | high | 180 | - | delegation-protocol, doubt-escalation, output-contract, red-teaming, planning-dag |
+| planning | `planner` | claude-opus-5-5 | high | 240 | neural-memory | delegation-protocol, doubt-escalation, output-contract, planning-dag, effort-and-model-selection |
+| quality | `adversarial-verifier` | claude-opus-5-5 | high | 48 | - | delegation-protocol, doubt-escalation, output-contract, adversarial-verification |
+| quality | `code-optimizer` | claude-opus-5-5 | high | 450 | - | delegation-protocol, doubt-escalation, output-contract, performance-optimization |
+| quality | `code-quality-analyst` | claude-sonnet-5-5 | medium | 270 | - | delegation-protocol, doubt-escalation, output-contract, code-quality-metrics |
+| quality | `debugger` | claude-opus-5-5 | high | 480 | neural-memory | delegation-protocol, doubt-escalation, output-contract, debugging-method, testing-strategy |
+| quality | `quality-control` | claude-opus-5-5 | medium | 210 | - | delegation-protocol, doubt-escalation, output-contract, validation-gates, source-evaluation |
+| quality | `reviewer` | claude-opus-5-5 | high | 360 | neural-memory | delegation-protocol, doubt-escalation, output-contract, code-review-checklist, adversarial-verification |
+| quality | `security-auditor` | claude-opus-5-5 | high | 360 | - | delegation-protocol, doubt-escalation, output-contract, security-review, adversarial-verification |
+| quality | `tester` | claude-sonnet-5-5 | high | 450 | playwright, desktop-sandbox | delegation-protocol, doubt-escalation, output-contract, testing-strategy, browser-automation, sandboxed-computer-use |
+| quality | `validator` | claude-sonnet-5-5 | medium | 270 | - | delegation-protocol, doubt-escalation, output-contract, validation-gates, testing-strategy |
+| research | `browser-operator` | claude-sonnet-5-5 | medium | 450 | playwright | delegation-protocol, doubt-escalation, output-contract, browser-automation |
+| research | `computer-operator` | claude-sonnet-5-5 | medium | 450 | computer-use, desktop-sandbox | delegation-protocol, doubt-escalation, output-contract, computer-use, sandboxed-computer-use |
+| research | `deep-researcher` | claude-opus-5-5 | max | 240 | exa, jina, spider, fetch | delegation-protocol, doubt-escalation, output-contract, deep-research, web-search-tools, source-evaluation |
+| research | `fact-checker` | claude-sonnet-5-5 | medium | 36 | exa, jina, fetch | delegation-protocol, doubt-escalation, output-contract, source-evaluation, web-search-tools |
+| research | `file-summarizer` | claude-haiku-5-5 | low | 120 | - | delegation-protocol, doubt-escalation, output-contract |
+| research | `paper-researcher` | claude-opus-5-5 | high | 216 | jina, exa, fetch | delegation-protocol, doubt-escalation, output-contract, literature-review, source-evaluation |
+| research | `quick-researcher` | claude-sonnet-5-5 | low | 60 | exa, jina, fetch | delegation-protocol, doubt-escalation, output-contract, quick-research, web-search-tools |
+| research | `source-summarizer` | claude-haiku-5-5 | low | 105 | jina, fetch | delegation-protocol, doubt-escalation, output-contract, source-evaluation |
+| research | `web-crawler` | claude-haiku-5-5 | medium | 360 | spider, fetch | delegation-protocol, doubt-escalation, output-contract, scraping-crawling |
+| research | `web-scraper` | claude-haiku-5-5 | medium | 240 | spider, jina, fetch | delegation-protocol, doubt-escalation, output-contract, scraping-crawling |
+| research | `web-searcher` | claude-sonnet-5-5 | xhigh | 120 | exa, jina, fetch | delegation-protocol, doubt-escalation, output-contract, web-search-tools |
+| synthesis | `analogy-mapper` | claude-opus-5-5 | high | 270 | - | delegation-protocol, doubt-escalation, output-contract, analogical-transfer |
+| synthesis | `cross-domain-synthesizer` | claude-opus-5-5 | xhigh | 360 | - | delegation-protocol, doubt-escalation, output-contract, expert-synthesis, analogical-transfer, bayesian-aggregation |
+| synthesis | `debate-moderator` | claude-opus-5-5 | high | 360 | - | delegation-protocol, doubt-escalation, output-contract, structured-debate |
+| synthesis | `expert-panel-chair` | claude-opus-5-5 | high | 540 | - | delegation-protocol, doubt-escalation, output-contract, delphi-method, bayesian-aggregation |
+| synthesis | `first-principles-decomposer` | claude-opus-5-5 | xhigh | 270 | - | delegation-protocol, doubt-escalation, output-contract, first-principles, triz-morphological, tree-of-thought |
+| synthesis | `general-chat` | claude-sonnet-5-5 | low | 105 | - | delegation-protocol, doubt-escalation, output-contract, quick-research |
+| writing | `chat-aide` | claude-sonnet-5-5 | low | 18 | - | delegation-protocol, doubt-escalation, output-contract |
+| writing | `copy-editor` | claude-sonnet-5-5 | medium | 300 | - | delegation-protocol, doubt-escalation, output-contract, copyediting, manuscript-project |
+| writing | `fiction-writer` | claude-opus-5-5 | high | 360 | - | delegation-protocol, doubt-escalation, output-contract, fiction-craft, manuscript-project, prose-style-analysis |
+| writing | `manuscript-reviewer` | claude-opus-5-5 | high | 360 | - | delegation-protocol, doubt-escalation, output-contract, developmental-editing, fiction-craft, manuscript-project |
+| writing | `prose-stylist` | claude-sonnet-5-5 | high | 300 | - | delegation-protocol, doubt-escalation, output-contract, prose-style-analysis, fiction-craft |
+| writing | `writing-project-builder` | claude-sonnet-5-5 | medium | 180 | - | delegation-protocol, doubt-escalation, output-contract, manuscript-project, fiction-craft |

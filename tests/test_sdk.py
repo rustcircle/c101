@@ -38,6 +38,87 @@ class SdkAgentTests(unittest.TestCase):
             self.assertEqual(d.maxTurns, int(fm["maxTurns"]), name)
             self.assertEqual(set(ag.dropped) - {"color"}, set(), name)
             self.assertIn("delegation-protocol", d.skills or [], name)
+            # the learner-owned key is ignored on purpose, not dropped, and parsed into a typed field
+            self.assertNotIn("autoCompactWindow", ag.dropped, name)
+            self.assertEqual(ag.auto_compact_window, int(fm["autoCompactWindow"]), name)
+
+    def test_every_agent_compacts_at_or_above_the_floor(self):
+        from stack import tiers
+        from stack_sdk.agents import load_all
+        cfg = tiers.load()
+        floor = tiers.compact_window_floor()
+        self.assertEqual(floor, 600_000)
+        windows = tiers.context_windows(cfg)
+        for name, ag in load_all().items():
+            self.assertGreaterEqual(ag.auto_compact_window, floor, name)
+            self.assertLessEqual(ag.auto_compact_window, windows[ag.definition.model], name)
+
+    def test_compact_window_validation(self):
+        from stack_sdk.agents import parse_compact_window
+        self.assertEqual(parse_compact_window("600000"), 600_000)
+        for bad in ("99999", "1000001", "abc", "", "-5", "6e5"):
+            with self.assertRaises(ValueError, msg=bad):
+                parse_compact_window(bad, agent="x")
+
+    def test_compact_window_settings_are_max_per_model_within_floor_and_window(self):
+        """600000 is a floor, not a pinned value: the learner may have raised some agents."""
+        from stack import tiers
+        from stack_sdk.agents import compact_window_settings, load_all
+        loaded = load_all()
+        out = compact_window_settings(loaded)
+        floor, windows = tiers.compact_window_floor(), tiers.context_windows()
+        self.assertEqual(set(out), {ag.definition.model for ag in loaded.values()})
+        for model, spec in out.items():
+            win = spec["autoCompactWindow"]
+            self.assertGreaterEqual(win, floor, model)
+            self.assertLessEqual(win, windows[model], model)
+            self.assertEqual(win, max(ag.auto_compact_window for ag in loaded.values()
+                                      if ag.definition.model == model), model)
+
+    def test_compact_window_settings_exact_values_and_clamp(self):
+        """Synthetic agents for exact values: raised agents win per model; a small window clamps."""
+        import dataclasses
+        from stack import tiers
+        from stack_sdk.agents import compact_window_settings, load_all
+        base = load_all()
+        pick = {m: next(a for a in base.values() if a.definition.model == m)
+                for m in ("claude-haiku-5-5", "claude-opus-5-5")}
+        loaded = {"lo": dataclasses.replace(pick["claude-opus-5-5"], auto_compact_window=600_000),
+                  "hi": dataclasses.replace(pick["claude-opus-5-5"], auto_compact_window=670_000),
+                  "h": dataclasses.replace(pick["claude-haiku-5-5"], auto_compact_window=600_000)}
+        self.assertEqual(compact_window_settings(loaded),
+                         {"claude-haiku-5-5": {"autoCompactWindow": 600_000},
+                          "claude-opus-5-5": {"autoCompactWindow": 670_000}})
+        cfg = tiers.load()
+        cfg["tiers"]["LOW_MODEL"]["context_window"] = 200_000   # a model that cannot hold 600K
+        orig = tiers.load
+        tiers.load = lambda: cfg
+        try:
+            out = compact_window_settings(loaded)
+        finally:
+            tiers.load = orig
+        self.assertEqual(out["claude-haiku-5-5"], {"autoCompactWindow": 200_000})
+        self.assertEqual(out["claude-opus-5-5"], {"autoCompactWindow": 670_000})
+
+    def test_bad_compact_window_does_not_break_the_load(self):
+        """A hand-edited '600K' must not stop every SDK run: warn, skip it, use the floor; `check` reports it."""
+        import warnings
+        from stack import tiers
+        from stack_sdk.agents import load_agent
+        tmp = tempfile.mkdtemp()
+        try:
+            path = os.path.join(tmp, "oops.md")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write("---\nname: oops\ndescription: x\nautoCompactWindow: 600K\n---\nbody\n")
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                ag = load_agent(path)
+            self.assertTrue(any("autoCompactWindow" in str(x.message) for x in w))
+            self.assertEqual(ag.auto_compact_window, tiers.compact_window_floor())
+            self.assertEqual(len(ag.problems), 1)
+            self.assertIn("600K", ag.problems[0])
+        finally:
+            shutil.rmtree(tmp)
 
     def test_tier_env_override(self):
         from stack_sdk.agents import load_agents
@@ -67,6 +148,7 @@ class SdkOptionsTests(unittest.TestCase):
         self.assertEqual(o.permission_mode, "dontAsk")
         self.assertEqual(o.extra_args.get("permission-prompts"), "none")
         self.assertEqual(o.env["CLAUDE_CODE_DISABLE_BACKGROUND_TASKS"], "1")
+        self.assertNotIn("modelSettings", json.loads(o.settings))  # agent files carry the window in-repo
         self.assertIn("mcp__exa", o.allowed_tools)
         self.assertIn("Workflow", o.allowed_tools)
 
@@ -79,6 +161,11 @@ class SdkOptionsTests(unittest.TestCase):
             self.assertEqual(o.system_prompt["type"], "preset")
             self.assertTrue(o.system_prompt["append"].startswith("You are the delegator"))
             self.assertEqual(o.env["CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH"], "8")
+            # autoCompactWindow has no per-agent SDK field: it goes through as per-model session settings
+            from stack import tiers
+            win = json.loads(o.settings)["modelSettings"]["claude-opus-5-5"]["autoCompactWindow"]
+            self.assertGreaterEqual(win, tiers.compact_window_floor())
+            self.assertLessEqual(win, tiers.context_windows()["claude-opus-5-5"])
             self.assertEqual(set(o.hooks), {"PreToolUse", "PostToolUse", "SubagentStop", "UserPromptSubmit"})
             for name, cfg in o.mcp_servers.items():
                 blob = json.dumps(cfg)

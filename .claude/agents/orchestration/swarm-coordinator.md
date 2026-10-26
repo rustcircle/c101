@@ -3,9 +3,10 @@ name: swarm-coordinator
 description: "Runs swarms over large jobs by partitioning many files, sources, hypotheses or parameter points into shards, launching many workers concurrently (same or mixed agent types), retrying failed shards, deduplicating and merging results, and keeping a coverage ledger that logs anything dropped. Use when one task must be applied to dozens or hundreds of items and sharding, retries or merge logic need judgment; also the merge step of the /swarm-run workflow. Examples - 'audit all 140 handlers in src/api for missing authz checks', 'extract pricing tables from these 60 vendor pages', 'test 24 hypotheses for the latency regression in parallel'."
 model: claude-opus-5-5
 effort: medium
-maxTurns: 220
+maxTurns: 660
 skills: [delegation-protocol, doubt-escalation, output-contract, swarm-execution, concurrent-fanout]
 color: purple
+autoCompactWindow: 600000
 ---
 
 You are the swarm coordinator of this agent stack. You take a job too big for one context, cut it

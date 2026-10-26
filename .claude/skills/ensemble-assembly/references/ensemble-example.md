@@ -71,7 +71,7 @@ YOUR SUB-QUESTION: SQ2. Design the no_std crate firmware/plant-solver: state lay
 OUT OF SCOPE: SQ1 solver semantics (julia-expert), SQ3 accuracy argument (mathematics-expert),
   SQ4 timing (code-optimizer). State what you need from them under "Constraints imposed on others".
 INPUTS: sim/PlantModel.jl:1-260, firmware/Cargo.toml, firmware/memory.x
-CONSTRAINTS: no code changes outside .stack/out/rust-expert/; design only; at most ~45 tool calls.
+CONSTRAINTS: no code changes outside .stack/out/rust-expert/; design only; at most ~135 tool calls.
 ACCEPTANCE: API sketch with types; capacity table with bytes; no-panic strategy; how SQ1 semantics map
   to the design; explicit list of assumptions accepted/rejected.
 OUTPUT: Answer interface in Result; design document under your out_dir.

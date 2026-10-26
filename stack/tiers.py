@@ -8,7 +8,11 @@ frontmatter:
   ``MEDIUM_MODEL``, ``LOW_MODEL`` override the configured ids, e.g. to trial a
   new release without editing files);
 * ``effort`` / ``maxTurns`` are written only when missing, or for every agent
-  with ``reset_traits=True`` -- after that the Bayesian learner owns them.
+  with ``reset_traits=True`` -- after that the Bayesian learner owns them;
+* ``autoCompactWindow`` (initial value ``default_traits`` in models.json, clamped to the tier's
+  ``context_window``) is also learner-owned, but ``sync`` additionally raises a value that sits
+  below the floor (config/learning.json ``default_bounds.autoCompactWindow[0]``), so a learner
+  or hand edit can never leave an agent compacting earlier than the policy allows.
 """
 from __future__ import annotations
 
@@ -42,6 +46,41 @@ def tier_models(cfg: Optional[dict] = None) -> Dict[str, str]:
     for name, spec in cfg["tiers"].items():
         out[name] = (os.environ.get(name) or spec["model"]).strip()
     return out
+
+
+def context_windows(cfg: Optional[dict] = None) -> Dict[str, int]:
+    """Effective model id -> context window in tokens (the tier's ``context_window``).
+
+    An env override (``ADVANCED_MODEL`` ...) swaps the model id but keeps the tier's window, so
+    point it at a model with at least that window or lower ``context_window`` in models.json.
+    """
+    cfg = cfg or load()
+    models = tier_models(cfg)
+    return {models[name]: int(spec["context_window"])
+            for name, spec in cfg["tiers"].items() if spec.get("context_window")}
+
+
+def compact_window_floor() -> int:
+    """Lowest autoCompactWindow the learner may leave an agent at (config/learning.json bounds)."""
+    try:
+        with open(os.path.join(paths.CONFIG_DIR, "learning.json"), encoding="utf-8") as fh:
+            lo = json.load(fh).get("default_bounds", {}).get("autoCompactWindow", [0])[0]
+        return int(lo)
+    except (OSError, ValueError, IndexError, TypeError):
+        return 0
+
+
+def initial_compact_window(agent: str, cfg: Optional[dict] = None) -> Optional[int]:
+    """autoCompactWindow an agent starts with: its own entry, else ``default_traits``, clamped to
+    what its tier's model can hold.  None when no value is configured."""
+    cfg = cfg or load()
+    entry = cfg["agents"].get(agent) or {}
+    want = entry.get("autoCompactWindow", (cfg.get("default_traits") or {}).get("autoCompactWindow"))
+    if want in (None, ""):
+        return None
+    want = int(want)
+    window = (cfg["tiers"].get(entry.get("tier", "")) or {}).get("context_window")
+    return min(want, int(window)) if window else want
 
 
 def tier_aliases(cfg: Optional[dict] = None) -> Dict[str, str]:
@@ -83,6 +122,13 @@ def sync(apply: bool = False, reset_traits: bool = False, only: Optional[List[st
             cur = fm.get(key)
             if (cur in (None, "") or reset_traits) and str(cur) != str(want):
                 upd[key] = str(want)
+        want_win = initial_compact_window(name, cfg)
+        if want_win is not None:
+            cur_win = fm.get("autoCompactWindow")
+            cur_ok = str(cur_win or "").isdigit()
+            if reset_traits or not cur_ok or int(cur_win) < min(compact_window_floor(), want_win):
+                if str(cur_win) != str(want_win):
+                    upd["autoCompactWindow"] = str(want_win)
         if upd:
             if apply:
                 frontmatter.update_file(path, upd)

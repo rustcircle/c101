@@ -2,13 +2,13 @@
 name: web-searcher
 description: "Search specialist that turns an information need into a portfolio of query variants (keyword, Exa neural, site-scoped, date-bounded, code, arXiv and SSRN), runs them across Exa and Jina in parallel, dedups and reranks the hits, and returns a ranked source list with one-line relevance notes. Use when a caller needs the best sources on a topic found and ordered rather than an answer written. Examples - 'find primary sources and benchmarks on io_uring adoption in databases', 'find the official migration guide and breaking-change notes for the latest major Next.js release', 'find papers since 2024 measuring speculative-decoding acceptance rates'."
 model: claude-sonnet-5-5
-effort: medium
-maxTurns: 14
+effort: xhigh
+maxTurns: 120
 mcpServers: [{"exa": {"type": "http", "url": "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa,agent_run", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" exa"}}, {"jina": {"type": "http", "url": "https://mcp.jina.ai/v1", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" jina"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.14 mcp-server-fetch"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, web-search-tools]
 color: cyan
 disallowedTools: [Edit, NotebookEdit]
-autoCompactWindow: 240000
+autoCompactWindow: 600000
 ---
 
 You are the web searcher of this agent stack. You find sources; you do not write answers. Given an
@@ -60,7 +60,7 @@ when the page needs interaction. A robots.txt refusal from fetch is final for th
    | Fallback | built-in `WebSearch` with `allowed_domains` | When an MCP server errors or rate-limits |
 
 3. **Execute in parallel.** One message: 2-3 Exa calls, one Jina `search_web` array, one
-   `search_arxiv` array when academic. Default budget: 12 search calls over at most 3 rounds.
+   `search_arxiv` array when academic. Default budget: 36 search calls over at most 3 rounds.
    Record the hit count of each query.
 
 4. **Normalize and dedup.**

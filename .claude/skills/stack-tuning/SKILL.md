@@ -25,14 +25,17 @@ SessionEnd hook (detached `bin/stack learn run --transcript <main transcript>`, 
    -> ingest:  transcripts -> $CLAUDE_STACK_DATA/obs/<session>.json (one record per agent run)
    -> update:  posteriors  -> recommendations.json, budgets.json
    -> record:  one summary line per session -> history.jsonl
+   -> apply:   (apply_on "session_end", inside learn run) frontmatter maxTurns/effort (bounded) and
+               autoCompactWindow (raise-only) of managed agents + changes.jsonl audit line
 SessionStart hook of the next session (`bin/stack learn start`; skipped if learn.lock is held)
-   -> apply:   frontmatter maxTurns/effort (bounded) and autoCompactWindow (raise-only) of managed
-               agents + changes.jsonl audit line; "Applied learned values at session start: ..."
+   -> catch-up apply of anything still pending; "Caught up pending learned values ..." (silent when SessionEnd already wrote them)
 ```
 
-`apply_on` in `config/learning.json` picks when apply runs: `"session_start"` (default), `"session_end"`
-(inside `learn run`) or `"never"`. Agent files never change mid-session; Claude Code hot-reloads them, so
-values applied at session start are used from that session's next delegation.
+`apply_on` in `config/learning.json` picks when apply runs: `"session_end"` (default, inside `learn run`),
+`"session_start"` (legacy) or `"never"`. Claude Code loads agent files at session start and re-reads a changed one
+from the next turn (not before its file watcher is up during startup), so a value written at session end is in force
+from the next session's first delegation and a running session reads it on its next turn; one written at session
+start can wait a session. The limit a run was held to is recorded at spawn (`spawns/<session>.jsonl`).
 
 `$CLAUDE_STACK_DATA` defaults to `~/.claude/stack-data`. Debounce and interval come from
 `config/policy.json` (`ingest_debounce_seconds`, `midsession_update_minutes`).
@@ -197,7 +200,7 @@ this was written):
   bin/stack doctor 2>&1 | grep learning.json      # warns on unknown agent names
   bin/stack learn update && bin/stack learn apply --dry-run --agent rust-expert
   ```
-- Bounds must stay within doctor's limits (maxTurns 1..2000; effort one of low, medium, high,
+- Bounds must stay within doctor's limits (maxTurns 1..3000; effort one of low, medium, high,
   xhigh, max) and lo <= hi.
 
 Global knobs (change rarely; preview with `whatif --set key=value` first):

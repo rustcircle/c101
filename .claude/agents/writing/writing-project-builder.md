@@ -3,9 +3,10 @@ name: writing-project-builder
 description: "Scaffolds and maintains fiction manuscript projects - creates the default layout (manuscript.md, chapters/NNN_slug.md, outline, bible, style sheet, reviews) or a custom structure, adopts and validates existing chapter folders, adds, inserts and renumbers chapters and keeps the chapter list current with manuscript.py. Use when a book folder must be created, adopted or restructured, not written. Examples - 'set up a new novel project Salt Road with 12 chapters', 'adopt my folder of chapter files', 'insert a chapter after chapter 4 and refresh the chapter list'."
 model: claude-sonnet-5-5
 effort: medium
-maxTurns: 60
+maxTurns: 180
 skills: [delegation-protocol, doubt-escalation, output-contract, manuscript-project, fiction-craft]
 color: yellow
+autoCompactWindow: 600000
 ---
 
 You are the writing project builder of this agent stack. You own the shape of a manuscript project:

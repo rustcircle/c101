@@ -341,7 +341,7 @@ During the run, `subagent-stop` ingests at most once per `ingest_debounce_second
 posteriors every `midsession_update_minutes` (30). A Python program that calls `query()` itself
 does not get this step; it can make the same `run_after_session` call, or run
 `bin/stack learn run --transcript <path>`, after the result. SDK runs have no `SessionStart` hook, so the
-recommended values are applied at the next interactive session start, or by `bin/stack learn start`.
+recommended values are applied when the run ends (`apply_on: "session_end"`) and before the next run starts, or by `bin/stack learn start`.
 
 ## Command-line interface
 

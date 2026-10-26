@@ -14,10 +14,22 @@ pre-agent      PreToolUse on Agent|Task.  Computes the child's depth from the
                so every agent knows its depth, its parent and its budget.
 subagent-stop  SubagentStop (async).  Re-ingests the session's observations and
                periodically refreshes posteriors (debounced, lock-protected).
-session-start  SessionStart.  Adds a short status line (missing keys, recent
-               learned changes) as context.
-session-end    SessionEnd.  Detaches a background `learn run` so the 1.5 s
-               SessionEnd budget is never at risk.
+pre-agent also records, per spawn, the agent file's maxTurns at that moment (data/spawns/<session>.jsonl,
+               keyed by tool_use_id): the limit in force for that run, whatever happens to the file later.
+session-start  SessionStart.  Adds a short status line (missing keys, recent learned changes) as
+               context and applies still-pending learned values as a catch-up.
+session-end    SessionEnd.  Prunes old spawn records and detaches a background `learn run` (ingest,
+               update, history and, with apply_on "session_end", the apply) so the 1.5 s SessionEnd
+               budget is never at risk.
+
+Why learned values are applied at session END: Claude Code loads agent definitions when a session
+starts and watches the agent directories, re-reading a changed file from the next turn.  A write at
+SessionStart can land before that watcher is up and then wait for the next session (2026-10-26:
+deep-researcher ran with 45 turns while its file said 40).  Writing when a session ends puts the new
+values on disk before the next session loads them, and a session still running picks them up from its
+next turn.  The SessionStart apply remains as a catch-up for sessions whose SessionEnd run never
+completed (crash, kill -9, closed terminal).  Because the file can change at any moment, the limit in
+force for a run is recorded at spawn time, not read from the file afterwards.
 """
 from __future__ import annotations
 
@@ -224,6 +236,11 @@ def pre_agent(inp: dict) -> Optional[dict]:
                 "Stack spawn budget exhausted (%d subagents this session, budget %d). "
                 "Finish with what you have or ask the user to raise max_spawns_per_session in config/policy.json." % (count - 1, budget))}}
 
+    try:  # the limit this run is started under (agent files can change later); never blocks a spawn
+        _record_spawn(inp, child_type)
+    except Exception as exc:
+        _log_error("record-spawn", exc)
+
     if (not pol.get("inject_context", True) or not isinstance(tool_input.get("prompt"), str)
             or tool_input["prompt"].lstrip().startswith("<stack-context")):
         before = dict(tool_input)
@@ -280,18 +297,110 @@ def _stack_cmd(*args: str):
     return [sys.executable, "-m", "stack.cli"] + list(args)
 
 
+SPAWN_RECORD_MAX_AGE_DAYS = 14
+
+
+def _spawns_path(session_id: str) -> str:
+    return os.path.join(paths.data_dir(), "spawns", "%s.jsonl" % session_id)
+
+
+def _file_max_turns(agent_type: str) -> Optional[int]:
+    """maxTurns in the agent's file right now, or None."""
+    from . import frontmatter
+    path = paths.find_agent_file(agent_type) if agent_type else None
+    if not path:
+        return None
+    try:
+        mt = str(frontmatter.read(path).get("maxTurns") or "")
+    except (OSError, frontmatter.FrontmatterError):
+        return None
+    return int(mt) if mt.isdigit() else None
+
+
+def _record_spawn(inp: dict, agent_type: str) -> None:
+    """pre-agent: remember the maxTurns the agent file says at the moment of the spawn, keyed by the Agent
+    call's tool_use_id.  Agent files can change at any time (another session's end applies learned values;
+    Claude Code re-reads a changed file from the next turn), so only this is the limit the run was started
+    under.  Fail-open: no id or no limit means no record."""
+    tuid, sid = inp.get("tool_use_id"), inp.get("session_id")
+    limit = _file_max_turns(agent_type)
+    if not tuid or not sid or limit is None:
+        return
+    p = _spawns_path(sid)
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    with open(p, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"tool_use_id": tuid, "agent_type": agent_type, "limit_max_turns": limit,
+                             "ts": time.time()}) + "\n")
+
+
+def _limit_at_stop(inp: dict, agent_type: str) -> tuple:
+    """(maxTurns in force for the stopped agent, basis) or (None, None).
+
+    ``spawn_record``: the value saved when the agent was spawned, found through the ``toolUseId`` in the
+    agent's meta file (next to its transcript).  Otherwise ``stop_frontmatter``: the file now, which is
+    wrong if it was rewritten while the agent ran.  The harness's own cut-off notice (read at ingest)
+    outranks both."""
+    sid = inp.get("session_id")
+    tp = inp.get("agent_transcript_path")
+    tuid = None
+    if isinstance(tp, str) and tp.endswith(".jsonl"):
+        try:
+            with open(tp[:-len(".jsonl")] + ".meta.json", encoding="utf-8") as fh:
+                tuid = (json.load(fh) or {}).get("toolUseId")
+        except (OSError, ValueError, AttributeError):
+            pass
+    if tuid and sid:
+        try:
+            with open(_spawns_path(sid), encoding="utf-8") as fh:
+                for line in fh:
+                    try:
+                        rec = json.loads(line)
+                    except ValueError:
+                        continue
+                    if rec.get("tool_use_id") == tuid and str(rec.get("limit_max_turns") or "").isdigit():
+                        return int(rec["limit_max_turns"]), "spawn_record"
+        except OSError:
+            pass
+    now = _file_max_turns(agent_type)
+    return (now, "stop_frontmatter") if now is not None else (None, None)
+
+
+def _prune_old(days: float = SPAWN_RECORD_MAX_AGE_DAYS) -> None:
+    """Delete spawn records (and the superseded limits/ snapshots) older than ``days``."""
+    cutoff = time.time() - days * 86400
+    for sub in ("spawns", "limits"):
+        for f in glob.glob(os.path.join(paths.data_dir(), sub, "*")):
+            try:
+                if os.path.getmtime(f) < cutoff:
+                    os.remove(f)
+            except OSError:
+                pass
+
+
+# SubagentStop payload keys that may carry why the agent stopped (a documented field is not
+# guaranteed by every Claude Code version; whatever structured one is present is recorded verbatim).
+_STOP_REASON_KEYS = ("stop_reason", "subtype", "reason")
+
+
 def _record_stop(inp: dict) -> None:
-    """Append the authoritative per-agent facts only this payload carries (effort in effect)."""
+    """Append the authoritative per-agent facts only this payload carries: the effort in effect, the
+    stop reason (``stop_reason``, as ``engine.ingest_transcript`` reads it) and the maxTurns in force
+    for the agent (``limit_max_turns``, the key ``engine._limit_at_run`` reads) with its true basis in
+    ``limit_basis`` (``spawn_record`` or ``stop_frontmatter``)."""
     sid = inp.get("session_id")
     if not sid or not inp.get("agent_id"):
         return
     eff = inp.get("effort")
     level = eff.get("level") if isinstance(eff, dict) else (eff if isinstance(eff, str) else None)
+    agent_type = inp.get("agent_type") or ""
+    stop_reason = next((str(inp[k]) for k in _STOP_REASON_KEYS if isinstance(inp.get(k), str) and inp[k]), None)
+    limit, basis = _limit_at_stop(inp, agent_type)
     d = os.path.join(paths.data_dir(), "stops")
     os.makedirs(d, exist_ok=True)
     with open(os.path.join(d, "%s.jsonl" % sid), "a", encoding="utf-8") as fh:
-        fh.write(json.dumps({"agent_id": inp.get("agent_id"), "agent_type": inp.get("agent_type") or "",
-                             "effort": level, "ts": time.time()}) + "\n")
+        fh.write(json.dumps({"agent_id": inp.get("agent_id"), "agent_type": agent_type,
+                             "effort": level, "stop_reason": stop_reason,
+                             "limit_max_turns": limit, "limit_basis": basis, "ts": time.time()}) + "\n")
 
 
 def subagent_stop(inp: dict) -> Optional[dict]:
@@ -318,12 +427,16 @@ def subagent_stop(inp: dict) -> Optional[dict]:
         interval = float(_policy().get("midsession_update_minutes", 30)) * 60
         last = os.path.getmtime(stamp) if os.path.exists(stamp) else 0
         if time.time() - last > interval:
-            engine.update()  # recommendations only: agent files change at the next session start
+            engine.update()  # recommendations only: agent files change when a session ends (apply_on)
             open(stamp, "w").close()
     return None
 
 
 def session_end(inp: dict) -> Optional[dict]:
+    try:
+        _prune_old()
+    except Exception as exc:  # housekeeping must never delay the learner
+        _log_error("session-end prune", exc)
     tp = inp.get("transcript_path")
     if tp:
         _detach(_stack_cmd("learn", "run", "--transcript", tp))
@@ -338,19 +451,28 @@ def _missing_keys(want: Optional[list] = None) -> list:
 
 
 def _apply_learned() -> list:
-    """Write pending recommendations into agent files (Claude Code hot-reloads them, so this session's
-    next delegation already uses the new values). Skipped while another learner run holds the lock."""
+    """Catch-up apply at SessionStart: write recommendations that are still pending into agent files.
+
+    The primary apply runs at SessionEnd (``engine.run_after_session`` under ``apply_on: "session_end"``),
+    which puts the values on disk before the next session loads its definitions.  This one only covers a
+    SessionEnd run that never finished, and with ``apply_on: "session_start"`` (legacy) it is the only
+    apply.  Claude Code re-reads a changed agent file from the next turn, but a write made this early
+    can land before its file watcher is running and then only the next session sees it.  Returns only
+    changes that were really written (``engine.apply`` compares with the files), so it is silent after a
+    SessionEnd apply.  ``apply_on: "never"`` (or ``auto_apply: false``) disables both.  Skipped while
+    another learner run holds the lock.
+    """
     try:
         from .learn import engine
-        if engine.apply_on() != "session_start":
+        if engine.apply_on() not in ("session_start", "session_end"):
             return []
         os.makedirs(paths.data_dir(), exist_ok=True)
         with open(os.path.join(paths.data_dir(), "learn.lock"), "w") as lock:
             try:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except OSError:
-                return []  # a previous session's SessionEnd run is still writing; apply next time
-            return engine.start_of_session()
+                return []  # a previous session's SessionEnd run is still writing; it applies on its own
+            return engine.apply()
     except Exception as exc:  # never block a session start
         _log_error("session-start apply", exc)
         return []
@@ -363,7 +485,8 @@ def session_start(inp: dict) -> Optional[dict]:
         parts.append("Missing keys in ~/.claude/stack.env: %s (those MCP servers run anonymous or fail)." % ", ".join(miss))
     applied = _apply_learned()
     if applied:
-        parts.append("Applied learned values at session start: " + "; ".join(
+        parts.append("Caught up pending learned values (Claude Code reads agent files again from the next turn; "
+            "a write this early in startup may only reach the next session): " + "; ".join(
             "%s %s" % (c["agent"], ",".join("%s=%s" % kv for kv in c["updates"].items())) for c in applied) + ".")
     ch = os.path.join(paths.data_dir(), "changes.jsonl")
     if not applied and os.path.exists(ch) and time.time() - os.path.getmtime(ch) < 7 * 86400:

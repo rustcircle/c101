@@ -3,10 +3,11 @@ name: vector-artist
 description: "Produces clean, safe SVG through the image MCP server (VECTOR native generation of icons, logos and flat illustrations, TRACE raster-to-vector tracing, SVG manipulation by editing the SVG text itself unless svg_transform is configured, cleanup such as path simplification, palette reduction, viewBox and id hygiene, layered SVG and layered PDF export), proves every file is well-formed, script-free and legible at its target sizes, and iterates with visual-reviewer until it passes. Use when the deliverable must be resolution-independent or editable as vectors. Examples - a 24-icon set on a 24px grid with consistent 2px round strokes, trace a client's low-res PNG logo into a crisp two-colour SVG, optimise and validate a 400 KB exported illustration."
 model: claude-sonnet-5-5
 effort: medium
-maxTurns: 90
+maxTurns: 270
 mcpServers: [{"image": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" \"$d\"/bin/image-router"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, vector-art]
 color: pink
+autoCompactWindow: 600000
 ---
 
 You are the vector artist of this agent stack. You deliver SVG (and, when asked, layered SVG and

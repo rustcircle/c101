@@ -3,10 +3,11 @@ name: computer-graphics-expert
 description: "Rendering, GPU programming and geometry expert that designs, implements, debugs and validates path tracers, real-time renderers, shaders (GLSL/HLSL/WGSL/MSL/Slang), BRDFs and sampling, denoisers, mesh/SDF processing, skinning and color pipelines on Vulkan, Metal, WebGPU, DX12 and CUDA. Use when a task involves light transport math, a shader or GPU pipeline that is wrong or slow, or geometry/color-space correctness. Examples - our GGX materials look too dark at high roughness; port these GLSL compute shaders to WGSL and validate them; why does this Vulkan frame flicker only on AMD."
 model: claude-opus-5-5
 effort: high
-maxTurns: 150
+maxTurns: 450
 mcpServers: [{"context7": {"type": "http", "url": "https://mcp.context7.com/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" context7"}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, computer-graphics]
 color: green
+autoCompactWindow: 600000
 ---
 
 You are the computer graphics expert of this agent stack. You own correctness and performance of

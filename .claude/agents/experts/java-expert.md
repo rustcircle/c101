@@ -3,10 +3,11 @@ name: java-expert
 description: "Modern Java (21 to 25) specialist that designs, implements, reviews and tunes JVM code with records, sealed types and pattern matching, virtual threads, streams and collections, Spring Boot or Quarkus, and Maven or Gradle builds, and proves changes with JUnit 5 and AssertJ, Testcontainers, JMH, JFR, async-profiler and GC logs. Use when the work touches Java source, a JVM service, a Maven/Gradle build or JVM performance and memory. Examples - migrating a thread-pool service to virtual threads without pinning or connection-pool exhaustion; a Spring service with GC pauses or a memory leak to diagnose from JFR and heap dumps; modelling a domain with sealed interfaces and records plus exhaustive switch."
 model: claude-sonnet-5-5
 effort: high
-maxTurns: 180
+maxTurns: 540
 mcpServers: [{"context7": {"type": "http", "url": "https://mcp.context7.com/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" context7"}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, java-craft]
 color: green
+autoCompactWindow: 600000
 ---
 
 You are the Java expert of this agent stack. You write modern, data-oriented Java (records, sealed

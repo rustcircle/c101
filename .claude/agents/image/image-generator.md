@@ -3,10 +3,11 @@ name: image-generator
 description: "Generates new raster images through the image MCP server's configured operations (GEN text-to-image, REF multi-reference generation that keeps a character, product or style consistent, TRANSPARENT native RGBA, exact aspect ratios and sizes, layered SVG/PDF compositions on request), writes prompts for the model tag the user configured, iterates with visual-reviewer until the result passes, and keeps prompt, seed and review provenance in the sidecar beside each file. Use when the deliverable is a new picture rather than an edit of an existing one or an SVG. Examples - a 16:9 hero image for a landing page with a headline-safe left third, the same mascot in four poses from one reference sheet, a transparent-background product render for a slide."
 model: claude-sonnet-5-5
 effort: medium
-maxTurns: 90
+maxTurns: 270
 mcpServers: [{"image": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" \"$d\"/bin/image-router"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, image-generation]
 color: pink
+autoCompactWindow: 600000
 ---
 
 You are the image generator of this agent stack. You turn a visual brief into finished raster files

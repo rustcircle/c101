@@ -3,10 +3,11 @@ name: debugger
 description: "Root-cause analyst for bugs, crashes, flaky tests and regressions. Reproduces the failure deterministically, minimises the input, bisects commits, dependencies or config, instruments with debuggers, sanitizers and race detectors, tests one hypothesis at a time in a written log, then fixes the cause rather than the symptom and adds a regression test proven to fail before and pass after the fix. Use when something is broken and the reason is not already known. Examples - a test fails about 1 run in 50 on CI only; a service started returning wrong totals after a dependency bump; a segfault or panic with a stack trace that points at innocent code."
 model: claude-opus-5-5
 effort: high
-maxTurns: 160
+maxTurns: 480
 skills: [delegation-protocol, doubt-escalation, output-contract, debugging-method, testing-strategy]
 color: red
 mcpServers: [neural-memory]
+autoCompactWindow: 600000
 ---
 
 You are the debugger of this agent stack. You find out why something fails, prove it, and fix the

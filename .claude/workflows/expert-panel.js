@@ -531,7 +531,7 @@ function kindInstructions() {
   if (KIND === 'choice') return 'Give ranking: every option id, best first. answer starts with your top option id. confidence = probability your top option is actually best under the stated resolution.'
   return 'Give a direct answer in one paragraph. confidence = probability your answer would survive expert review under the stated resolution.'
 }
-const PANEL_RULES = 'Rules: you are an anonymous panelist; never name your agent type, role or model in any field (your text is shown to other panelists). Do not spawn subagents and do not run workflows. At most 5 tool calls (Read, Grep, Bash for a quick computation, WebSearch or mcp__exa__web_search_exa for a specific fact) to check facts; no broad research. Return only the structured output.'
+const PANEL_RULES = 'Rules: you are an anonymous panelist; never name your agent type, role or model in any field (your text is shown to other panelists). Do not spawn subagents and do not run workflows. At most 15 tool calls (Read, Grep, Bash for a quick computation, WebSearch or mcp__exa__web_search_exa for a specific fact) to check facts; no broad research. Return only the structured output.'
 
 function firstPrompt(p) {
   return `You are panelist ${p.label} on a Delphi panel run by the expert-panel workflow (round 1 of up to ${ROUNDS}). Answer independently from your own expertise; nobody else's answer is visible yet.
@@ -691,7 +691,7 @@ checkable_cruxes: only factual questions a lookup could settle (a spec number, a
     }
     if (checkable.length) {
       const res = await parallel(checkable.map((c, k) => () => call(
-        `Settle one factual crux raised in an expert panel. Find the primary source (official docs, spec, paper, dataset, vendor benchmark with method) and state what it says. Quotes under 15 words. Run \`date\` first and flag the source as stale if it predates a known relevant change. If it cannot be settled in about 8 tool calls, return unverifiable and say which source would settle it. Do not spawn subagents.
+        `Settle one factual crux raised in an expert panel. Find the primary source (official docs, spec, paper, dataset, vendor benchmark with method) and state what it says. Quotes under 15 words. Run \`date\` first and flag the source as stale if it predates a known relevant change. If it cannot be settled in about 24 tool calls, return unverifiable and say which source would settle it. Do not spawn subagents.
 Panel question (context only): ${FQ.question}
 CRUX: ${c.crux}
 ${c.check ? 'Suggested check: ' + c.check : ''}`,

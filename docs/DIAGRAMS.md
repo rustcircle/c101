@@ -242,13 +242,15 @@ flowchart TB
 ## 3. Request lifecycle
 
 One request from start to finish, with the hook handlers in `stack/hooks.py` (run as `bin/stack hook <name>`) as
-the control plane. `SessionStart` applies the values the learner recommended at the end of the previous session and
-adds a status line; `UserPromptSubmit` adds the whole-tree token-budget note.
+the control plane. `SessionStart` catches up on any learned values still pending (the values the learner applied at the end of the
+previous session are already on disk and were loaded) and adds a status line; `UserPromptSubmit` adds the whole-tree token-budget note.
 Every Agent call passes `pre-agent` (diagram 4), which prepends the `<stack-context>` header to the child's brief.
 A subagent at depth n that reads the web passes `post-web` and `pre-tool` (diagram 5). The child returns the
 five-section output contract and keeps long output in `.stack/out/<agent>/`. `SubagentStop` runs asynchronously,
 records the effort that was in effect and ingests the session at most once a minute; `SessionEnd` detaches the
-learner (diagram 6), which updates the posteriors and records the session in `history.jsonl` without touching agent files. Every handler fails open: an error inside a hook never blocks the session, only deliberate
+learner (diagram 6), which updates the posteriors and records the session in `history.jsonl` and, with `apply_on: "session_end"`, writes the learned values into the agent
+files, for the next session to load (a running session re-reads them from its next turn). `pre-agent` records each
+spawn's `maxTurns` so the limit a run was held to is known whatever happens to the file later. Every handler fails open: an error inside a hook never blocks the session, only deliberate
 deny or ask decisions do. The `PreModelSwitch` guard, which keeps the main thread on its tier model, is left out.
 Source: [Lifecycle of one request](reference/overview.md#lifecycle-of-one-request), [Hook wiring](reference/hooks.md#hook-wiring).
 
@@ -288,7 +290,7 @@ sequenceDiagram
     D-->>U: answer in the five-section<br/>output contract
     U->>H: session ends<br/>SessionEnd
     H-)L: detached learn run
-    L->>L: ingest, update, record<br/>history.jsonl; applied at<br/>the next SessionStart
+    L->>L: ingest, update, record<br/>history.jsonl; applied here,<br/>read at next load or turn
 ```
 
 ## 4. Guard pipeline for one spawn
@@ -427,7 +429,7 @@ flowchart TB
 ## 6. Self-tuning loop
 
 After each session (and every 30 minutes during a long one) the learner updates what each agent's `maxTurns` and
-`effort` should be, given what its runs actually needed; the next session start writes it (`apply_on`), so agent
+`effort` should be, given what its runs actually needed; the end of the session writes it (`apply_on`), so the next session loads it (a running one re-reads it from its next turn) and agent
 files never change while a session runs. Ingest turns the transcripts into one record per agent run. Update
 fits per-agent posteriors: capped runs count as right-censored ("needed at least the cap"), so a cap that is too
 low cannot lock itself in, and old runs are down-weighted by a forgetting factor chosen per agent by prequential
@@ -459,7 +461,7 @@ flowchart TB
 
     R[("recommendations.json,<br/>budgets.json")]:::store
     HJ[("history.jsonl:<br/>one line per session")]:::store
-    T4["next SessionStart<br/>or learn start"]:::calc
+    T4["SessionEnd (or catch-up at<br/>SessionStart, learn start)"]:::calc
     A{{"apply within bounds:<br/>n_eff 3+, 5+ for effort;<br/>per-agent bounds;<br/>step x2 or one level;<br/>maxTurns change 10%+"}}:::calc
     F["agent frontmatter:<br/>maxTurns, effort"]:::out
     C[("changes.jsonl<br/>audit log")]:::store
@@ -484,7 +486,7 @@ flowchart TB
     T4 --> A
     A --> F
     A --> C
-    F -->|"hot reload: the next<br/>delegation uses them"| S
+    F -->|"read when the next<br/>session starts"| S
 
     classDef entry fill:#b0bec5,stroke:#37474f,color:#111
     classDef calc fill:#a5d6a7,stroke:#2e7d32,color:#111

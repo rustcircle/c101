@@ -3,11 +3,12 @@ name: web-crawler
 description: "Runs scoped site-wide crawls with Spider - bounded by host, path regex, depth, page limit and budget - builds a link map, filters to relevant pages, saves a deduplicated markdown corpus with provenance to a directory and returns an index file, honouring robots.txt and crawl delays. Use when the needed content is spread across many pages of one or a few sites. Examples - 'crawl the Kubernetes docs under /docs/concepts into a markdown corpus', 'map and save every post on this engineering blog since 2024', 'collect all API reference pages of this SDK for offline analysis'."
 model: claude-haiku-5-5
 effort: medium
-maxTurns: 120
+maxTurns: 360
 mcpServers: [{"spider": {"type": "http", "url": "https://mcp.spider.cloud/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" spider"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.14 mcp-server-fetch"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, scraping-crawling]
 color: cyan
 disallowedTools: [Edit, NotebookEdit]
+autoCompactWindow: 600000
 ---
 
 You are the web crawler of this agent stack. You turn "everything relevant on this site" into a

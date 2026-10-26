@@ -3,10 +3,11 @@ name: architect
 description: "Advanced planner for system and software architecture - turns quality-attribute requirements into 2-4 structurally different candidate designs (MVP-first, risk-first, performance-first, evolvability-first), does the capacity math, scores them against weights fixed in advance with a sensitivity check, red-teams the leader, optionally convenes a blind judge panel via mediator, and writes an ADR with fitness functions and a migration path. Use when the shape of a system is undecided or a one-way-door technical decision is on the table. Examples - 'event sourcing or CRUD plus outbox for the billing ledger?', 'design multi-region active-active for the API at 20k rps', 'split this monolith or modularise it in place?'."
 model: claude-opus-5-5
 effort: xhigh
-maxTurns: 120
+maxTurns: 360
 mcpServers: [{"context7": {"type": "http", "url": "https://mcp.context7.com/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" context7"}}, "neural-memory"]
 skills: [delegation-protocol, doubt-escalation, output-contract, planning-dag, judge-panel, red-teaming]
 color: blue
+autoCompactWindow: 600000
 ---
 
 You are the architect of this agent stack. You decide the shape of systems: boundaries, data

@@ -24,12 +24,26 @@ import glob
 import json
 import math
 import os
+import re
 from collections import Counter
 from datetime import datetime
 from typing import Dict, Iterable, List, Optional
 
 CHARS_PER_TOKEN = 3.6
 AGENT_TOOL_NAMES = ("Agent", "Task")
+
+# Structured stop reasons that mean "ran out of turns" (SDK result subtype, message/stop-event stop_reason).
+MAX_TURNS_STOP_REASONS = frozenset({"error_max_turns", "max_turns", "max_turns_reached", "turn_limit"})
+# Harness notices delivered to the *parent* when a subagent is cut off.  Anchored, so prose that merely
+# quotes the phrase (reports, thinking, the user's own messages) is not mistaken for a notice:
+#   background: <task-notification><task-id>ID</task-id>...<summary>Agent "d" stopped at its 45-turn limit
+#   foreground: Agent tool_result whose text starts "NOTE: this agent stopped at its 20-turn limit"
+_TASK_ID_RE = re.compile(r"\A\s*<task-id>\s*([^<\s]+)\s*</task-id>")
+_SUMMARY_RE = re.compile(r"<summary>(.*?)</summary>", re.S)
+# The phrase must follow the quoted description directly, so a description or a report that merely
+# contains it never counts.
+_SUMMARY_LIMIT_RE = re.compile(r'\s*Agent\s+"(?:[^"\\]|\\.)*"\s+stopped at its (\d+)-turn limit')
+_FOREGROUND_LIMIT_RE = re.compile(r"\s*NOTE: this agent stopped at its (\d+)-turn limit")
 
 
 def _iter_jsonl(path: str) -> Iterable[dict]:
@@ -78,6 +92,8 @@ def summarize_transcript(path: str) -> Optional[dict]:
     agent_spawns: Counter = Counter()
     first_ts = last_ts = None
     max_turns_hit = False
+    stop_reason = None
+    child_caps: Dict[str, Dict[str, int]] = {"agent_id": {}, "tool_use_id": {}}
     session_id = agent_id = None
 
     for row in _iter_jsonl(path):
@@ -104,6 +120,8 @@ def summarize_transcript(path: str) -> Optional[dict]:
                 rec["usage"] = u
             if m.get("stop_reason"):
                 rec["stop"] = m.get("stop_reason")
+                if m["stop_reason"] in MAX_TURNS_STOP_REASONS:
+                    max_turns_hit, stop_reason = True, m["stop_reason"]
             for b in m.get("content") or []:
                 if isinstance(b, dict):
                     rec["chars"] += _content_chars(b)
@@ -117,14 +135,24 @@ def summarize_transcript(path: str) -> Optional[dict]:
             content = (row.get("message") or {}).get("content")
             if isinstance(content, list):
                 for b in content:
-                    if isinstance(b, dict) and b.get("type") == "tool_result" and b.get("is_error"):
-                        tool_errors += 1
+                    if isinstance(b, dict) and b.get("type") == "tool_result":
+                        if b.get("is_error"):
+                            tool_errors += 1
+                        _foreground_cap(b, child_caps["tool_use_id"])
+                    elif isinstance(b, dict) and b.get("type") == "text":
+                        _task_notes(b.get("text"), child_caps["agent_id"])
+            else:
+                _task_notes(content, child_caps["agent_id"])
         elif typ == "system":
+            # Fallback text match (older transcripts carry no structured reason).
             txt = json.dumps(row.get("content") or "").lower()
             if "max turns" in txt or "maxturns" in txt or "max_turns" in txt:
                 max_turns_hit = True
-        if row.get("subtype") in ("error_max_turns",):
-            max_turns_hit = True
+        elif typ == "queue-operation":
+            _task_notes(row.get("content"), child_caps["agent_id"])
+        for key in ("subtype", "stop_reason"):
+            if row.get(key) in MAX_TURNS_STOP_REASONS:
+                max_turns_hit, stop_reason = True, row[key]
 
     if not order:
         return None
@@ -174,7 +202,37 @@ def summarize_transcript(path: str) -> Optional[dict]:
         "duration_s": (last_ts - first_ts) if (first_ts is not None and last_ts is not None) else None,
         "started_at": first_ts,
         "max_turns_hit": max_turns_hit,
+        "stop_reason": stop_reason,
+        # turn-limit notices this transcript received about its *children* (popped by ingest_session)
+        "_child_caps": child_caps,
     }
+
+
+def _task_notes(text, out: Dict[str, int]) -> None:
+    """Background-agent notices: task id -> the turn limit the harness says it stopped at."""
+    if not isinstance(text, str) or "<task-notification>" not in text:
+        return
+    for chunk in text.split("<task-notification>")[1:]:
+        # Only the notification's own header counts: its leading <task-id> and its first <summary>,
+        # never anything inside <result> (the child's report) or after the notification closes.
+        head = chunk.split("</task-notification>", 1)[0].split("<result>", 1)[0]
+        tid, summ = _TASK_ID_RE.search(head), _SUMMARY_RE.search(head)
+        lim = _SUMMARY_LIMIT_RE.match(summ.group(1)) if summ else None
+        if tid and lim:
+            out[tid.group(1)] = int(lim.group(1))
+
+
+def _foreground_cap(block: dict, out: Dict[str, int]) -> None:
+    """Foreground Agent tool_result: tool_use_id -> limit, when its text opens with the harness NOTE."""
+    content = block.get("content")
+    first = None
+    if isinstance(content, str):
+        first = content
+    elif isinstance(content, list):
+        first = next((c.get("text") for c in content if isinstance(c, dict) and c.get("type") == "text"), None)
+    m = _FOREGROUND_LIMIT_RE.match(first or "")
+    if m and block.get("tool_use_id"):
+        out[block["tool_use_id"]] = int(m.group(1))
 
 
 def _read_meta(jsonl_path: str) -> dict:
@@ -193,8 +251,17 @@ def session_dir_for(transcript_path: str) -> str:
 def ingest_session(transcript_path: str, main_agent: str = "main") -> List[dict]:
     """Observations for the main thread and every subagent of one session."""
     records: List[dict] = []
+    by_agent: Dict[str, int] = {}
+    by_tool_use: Dict[str, int] = {}
+
+    def collect(rec: dict) -> None:
+        caps = rec.pop("_child_caps", None) or {}
+        by_agent.update(caps.get("agent_id") or {})
+        by_tool_use.update(caps.get("tool_use_id") or {})
+
     main = summarize_transcript(transcript_path) if os.path.isfile(transcript_path) else None
     if main:
+        collect(main)
         main.update(agent_type=main_agent, spawn_depth=0, source="main", workflow=None,
                     transcript=transcript_path)
         main["agent_id"] = "main"
@@ -204,6 +271,7 @@ def ingest_session(transcript_path: str, main_agent: str = "main") -> List[dict]
         rec = summarize_transcript(path)
         if not rec:
             continue
+        collect(rec)
         meta = _read_meta(path)
         rel = os.path.relpath(path, sdir)
         wf = rel.split(os.sep)[1] if rel.startswith("workflows" + os.sep) else None
@@ -217,7 +285,16 @@ def ingest_session(transcript_path: str, main_agent: str = "main") -> List[dict]
         )
         if not rec.get("agent_id"):
             rec["agent_id"] = os.path.basename(path)[len("agent-"):-len(".jsonl")]
+        rec["_tool_use_id"] = meta.get("toolUseId")
         records.append(rec)
+    # A parent's transcript reports when a child was cut off, with the limit then in force.
+    for rec in records:
+        tuid = rec.pop("_tool_use_id", None)
+        rec["tool_use_id"] = tuid  # joins the run to its spawn-time limit record (hooks.pre_agent)
+        lim = by_agent.get(rec.get("agent_id")) or (by_tool_use.get(tuid) if tuid else None)
+        if lim:
+            rec.update(max_turns_hit=True, stop_reason=rec.get("stop_reason") or "harness_turn_limit",
+                       limit_notice=lim)
     return records
 
 

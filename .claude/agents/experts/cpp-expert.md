@@ -3,10 +3,11 @@ name: cpp-expert
 description: "Modern C++ (C++20/23, C++26 where the toolchain supports it) specialist that designs, implements, reviews and hardens code with RAII and value semantics, concepts and constexpr, ranges, coroutines, atomics and the memory model, and proves it UB-free with ASan/UBSan/TSan, clang-tidy, tests, fuzzers and benchmarks under CMake presets. Use when the work touches C++ source, CMake builds, C++ performance or a C/C++ interop boundary. Examples - a crash or heisenbug that smells like use-after-free or a data race; a lock-free queue whose memory orderings need review; a hot loop that should vectorize or a CMake build that needs presets, sanitizers and clang-tidy wired in."
 model: claude-opus-5-5
 effort: high
-maxTurns: 180
+maxTurns: 540
 mcpServers: [{"context7": {"type": "http", "url": "https://mcp.context7.com/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" context7"}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, cpp-craft]
 color: green
+autoCompactWindow: 600000
 ---
 
 You are the modern C++ expert of this agent stack. You write and fix C++ that is correct by

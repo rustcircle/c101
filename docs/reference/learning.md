@@ -50,28 +50,28 @@ There are four steps:
 3. **Record** (`engine.record_session`, SessionEnd only) writes the session's per-agent summary line to
    `history.jsonl`.
 4. **Apply** writes the recommended values into the frontmatter of managed agents and appends each
-   change to `changes.jsonl`. With the default `apply_on: "session_start"` it runs only at the next
-   SessionStart, so agent files never change while a session runs. Claude Code hot-reloads agent files
-   ("the next delegation uses the updated definition, with no restart needed",
-   [sub-agents](https://code.claude.com/docs/en/sub-agents)), so the values take effect from that
-   session's next delegation.
+   change to `changes.jsonl`. With the default `apply_on: "session_end"` it runs in the detached
+   `learn run` when a session ends. Claude Code loads agent definitions at session start and re-reads a changed file from the next turn once its file watcher
+   is running, so a write at SessionEnd is on disk before the next session loads and reaches a running session on its next
+   turn, while a write at SessionStart (the legacy `apply_on: "session_start"`, or the catch-up described under Triggers) can
+   land before the watcher is up and then wait a session. See [docs/LEARNING.md](../LEARNING.md#when-learned-values-take-effect).
 
 ### Triggers
 
 | Trigger | What runs | Guards |
 |---|---|---|
 | `SubagentStop` (`.claude/settings.json`: `"async": true`, `"timeout": 120`) | `_record_stop` appends the stop event. Then the session is re-ingested. At most every `midsession_update_minutes` the hook also runs `update`; it never applies ([subagent-stop](hooks.md#subagent-stop-telemetry-and-mid-session-learning)). | Non-blocking `flock` on `learn.lock` (a running ingest will see this agent too); ingest skipped while `last_ingest` is younger than `ingest_debounce_seconds` (60), because a 500-agent workflow would otherwise re-parse the session 500 times and SessionEnd always does a final full ingest; update only when `last_update` is older than `midsession_update_minutes` (30). Both keys live in `config/policy.json`. |
-| `SessionEnd` (`"timeout": 5`) | `_detach` starts `python -m stack.cli learn run --transcript <path>` with `start_new_session=True`: ingest, update, `record_session` (plus `apply` only when `apply_on` is `"session_end"`). Its output goes to `learn.log` ([session-end](hooks.md#session-end-detached-learner)). | Detached, because SessionEnd hooks share a 1.5 s budget. `learn run` waits for `learn.lock`, and returns `{"skipped": "learning disabled"}` when `enabled` is false. |
+| `SessionEnd` (`"timeout": 5`) | `_detach` starts `python -m stack.cli learn run --transcript <path>` with `start_new_session=True`: ingest, update, `record_session` and, when `apply_on` is `"session_end"` (the default), `apply`. Its output goes to `learn.log` ([session-end](hooks.md#session-end-detached-learner)). | Detached, because SessionEnd hooks share a 1.5 s budget. `learn run` waits for `learn.lock`, and returns `{"skipped": "learning disabled"}` when `enabled` is false. |
 | `bin/stack-sdk run` | The SDK has no SessionEnd callback. After the query ends, `_learn_after` calls `engine.run_after_session()` on `<projects root>/<project_key_for_directory(cwd)>/<session_id>.jsonl`. SDK `SubagentStop` callbacks run the same `subagent-stop` handler in-process through `asyncio.to_thread`. | Errors are printed as `learning skipped: ...` and never fail the run. |
-| `SessionStart` | `_apply_learned` runs `engine.start_of_session()` (`apply`) when `apply_on` is `"session_start"`, and adds `Applied learned values at session start: <agent> maxTurns=..,effort=..; ...` to the session context. Otherwise it adds `Recently self-tuned: <agent> k=v,...; ...` (the last 5 lines of `changes.jsonl`) ([session-start](hooks.md#session-start-status-line)). | Non-blocking `flock` on `learn.lock`: if a previous session's SessionEnd run still holds it, nothing is applied and it happens next time. Errors go to `hook-errors.log` and never block the start. The recent note only when `changes.jsonl` was modified in the last 7 days. |
+| `SessionStart` | `_apply_learned` runs `engine.apply()` as a catch-up when `apply_on` is `"session_end"` or `"session_start"`; `apply()` returns only writes that changed a file, so after a SessionEnd apply it is silent. When it did write it adds `Caught up pending learned values (Claude Code reads agent files again from the next turn; a write this early in startup may only reach the next session): <agent> maxTurns=..,effort=..; ...` to the session context. Otherwise it adds `Recently self-tuned: <agent> k=v,...; ...` (the last 5 lines of `changes.jsonl`) ([session-start](hooks.md#session-start-status-line)). | Non-blocking `flock` on `learn.lock`: if a previous session's SessionEnd run still holds it, nothing is applied and the holder applies. Errors go to `hook-errors.log` and never block the start. The recent note only when `changes.jsonl` was modified in the last 7 days. |
 
 Every handler fails open: exceptions are appended to `hook-errors.log`, and the hook exits 0.
 
 `enabled: false` makes `learn run` (the SessionEnd path and the SDK runner) a no-op and disables
 applying; the SubagentStop path still ingests and updates recommendations. To keep frontmatter frozen
 completely, set `"auto_apply": false` or `"apply_on": "never"` (`engine.apply_on()` returns `"never"` when
-`enabled` or `auto_apply` is false). The SDK runner has no SessionStart hook: its values land at the next
-interactive session start or with `bin/stack learn start`.
+`enabled` or `auto_apply` is false). The SDK runner has no SessionStart hook: it applies pending values itself before starting the CLI (in force for that run), and
+applies again after the run when `apply_on` is `"session_end"`.
 
 ### Files in `~/.claude/stack-data/`
 
@@ -82,7 +82,8 @@ are read from `$CLAUDE_PROJECTS_ROOT` (default `~/.claude/projects`).
 | Path | Written by | Contents |
 |---|---|---|
 | `obs/<session-id>.json` | `engine.ingest_transcript` | `{agent_id: record}` for the main thread (key `"main"`) and every subagent of one session, using the fields [below](#what-is-observed-per-run). The whole file is rewritten on every ingest, so re-ingesting is idempotent. |
-| `stops/<session-id>.jsonl` | `hooks._record_stop` | One line per SubagentStop: `{"agent_id", "agent_type", "effort", "ts"}`. `effort` is the level in effect, taken from the payload's `effort.level` or a bare string. |
+| `stops/<session-id>.jsonl` | `hooks._record_stop` | One line per SubagentStop: `{"agent_id", "agent_type", "effort", "stop_reason", "limit_max_turns", "limit_basis", "ts"}`. `effort` is the level in effect, taken from the payload's `effort.level` or a bare string. `stop_reason` is whatever `stop_reason`/`subtype`/`reason` the payload carries (else null). `limit_max_turns` is the maxTurns in force with its basis: `spawn_record` (the pre-agent record found through the agent's `toolUseId`) or `stop_frontmatter` (the file at stop time). |
+| `spawns/<session-id>.jsonl` | `hooks._record_spawn` (pre-agent) | One line per Agent spawn: `{"tool_use_id", "agent_type", "limit_max_turns", "ts"}`, the agent file's maxTurns at that moment. Pruned after 14 days at SessionEnd. |
 | `recommendations.json` | `engine.update` | `{"generated_at", "agents": {name: recommendation}, "global": global_budgets()}`. Each recommendation holds `n`, `current`, `window`, `turns`, `maxTurns`, `effort`, `tokens`, `budget`, `status`, `managed` and `path`. |
 | `budgets.json` | `engine.update` | `{name: {max_output_tokens, recommend_1m_context, autoCompactWindow?, tokens}}` plus `"_global"`, a copy of the global block. `budget.limits()` reads `_global.applied`. |
 | `history.jsonl` | `engine.record_session` (SessionEnd `learn run`) | One JSON line per session; re-recording a session replaces its line: `{"session_id", "recorded_at", "started_at", "project"` (transcript directory name)`, "runs", "tokens_total", "agents": {agent_type: {runs, capped, tool_errors, tokens_total, output_tokens, duration_s, effort: {level: count}, models, turns_median, turns_max, tool_rounds_median, tool_rounds_max, maxTurns: {current, recommended}, effort_setting: {current, recommended}}}}`. Read by `learn history`. |
@@ -439,7 +440,7 @@ All guard rails are applied in the model, before apply sees a value:
 | Guard | `maxTurns` | `effort` | `autoCompactWindow` |
 |---|---|---|---|
 | Minimum evidence | `n_eff >= 3` | `n_eff >= 5` | `n_eff >= 3` |
-| Bounds | per-agent `[lo, hi]`, default `[5, 1000]` | per-agent `[lo, hi]`, default `[low, max]` | `[100000, 1000000]` |
+| Bounds | per-agent `[lo, hi]`, default `[5, 1000]` | per-agent `[lo, hi]`, default `[low, max]` | configured `default_bounds.autoCompactWindow` `[600000, 1000000]` (floor = initial value, upper = tier `context_window`); the code still clamps to `[100000, 1000000]` |
 | Step limit | x2 or /2 per update | one level per update | none (raise-only) |
 | Hysteresis | `>= max(2, 10%)` change | stickiness 3.0 and failure hold | only when `want > current` |
 
@@ -471,8 +472,8 @@ When apply runs is set by `apply_on`:
 
 | `apply_on` | Applied by | Notes |
 |---|---|---|
-| `"session_start"` (default) | `session-start` hook (`engine.start_of_session`), or `bin/stack learn start` | Agent files never change mid-session; hot reload makes the values live for the session's next delegation |
-| `"session_end"` | the detached `learn run` after update and record | The previous behaviour; values land while no session is using them |
+| `"session_end"` (default) | the detached `learn run` after update and record; the session-start hook (or `bin/stack learn start`) only catches up on anything still pending | Values land on disk before the next session loads agent definitions, so they are in force from its first delegation, and a running session reads them from its next turn |
+| `"session_start"` (legacy) | `session-start` hook, or `bin/stack learn start` | Written during startup, possibly before Claude Code's file watcher is running, so it can wait for the next session (evidence: deep-researcher ran at 45 turns while the file said 40) |
 | `"never"` | only a manual `bin/stack learn apply` | Same as `auto_apply: false` or `enabled: false` |
 
 ## Learner configuration reference
@@ -483,7 +484,7 @@ When apply runs is set by `apply_on`:
 |---|---|---|
 | `enabled` | `true` | `false` makes `learn run` (SessionEnd and SDK runner) a no-op and disables applying. |
 | `auto_apply` | `true` | `false` disables automatic applying entirely (`apply_on()` returns `"never"`). |
-| `apply_on` | `"session_start"` | When learned values are written: `"session_start"` (session-start hook), `"session_end"` (detached `learn run`) or `"never"`. Mid-session updates never apply. |
+| `apply_on` | `"session_end"` | When learned values are written: `"session_end"` (detached `learn run`; the session-start hook catches up on anything pending), `"session_start"` (legacy, lands a session later) or `"never"`. Mid-session updates never apply. |
 | `turns_quantile` | `0.95` | Predictive quantile of tool rounds that `maxTurns` should cover. |
 | `turns_margin` | `1.15` | Multiplier on that quantile. Also the margin for `max_output_tokens` and `autoCompactWindow`. |
 | `prior_limit_ratio` | `3.0` | Prior typical run = current `maxTurns` / this. |

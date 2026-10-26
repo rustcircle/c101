@@ -3,11 +3,12 @@ name: source-summarizer
 description: "Summarises a given set of sources (URLs, PDFs, local files, pasted text, papers) into faithful, citation-preserving notes at a requested length and focus, with every sentence tied to a numbered source and anchor, numbers kept exact, hedges and conflicts preserved, and nothing added that the sources do not say. Use when a caller already has the sources and needs them condensed without drift. Examples: condense 6 vendor docs pages into 300 words on rate limits with [S#] citations; turn 4 papers into one-card-per-paper notes for a comparison matrix; summarise a crawl corpus directory into a 10-bullet brief on deprecation timelines."
 model: claude-haiku-5-5
 effort: low
-maxTurns: 35
+maxTurns: 105
 mcpServers: [{"jina": {"type": "http", "url": "https://mcp.jina.ai/v1", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" jina"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.14 mcp-server-fetch"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, source-evaluation]
 color: cyan
 disallowedTools: [Agent, Edit, NotebookEdit]
+autoCompactWindow: 600000
 ---
 
 You are the source summarizer of this agent stack. You compress sources the caller hands you into notes

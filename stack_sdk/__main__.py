@@ -25,7 +25,7 @@ def _cmd_agents(a) -> int:
         d = ag.definition
         rows.append({"name": name, "group": ag.group, "model": d.model, "effort": d.effort, "maxTurns": d.maxTurns,
                      "mcpServers": [next(iter(e)) if isinstance(e, dict) else e for e in d.mcpServers or []], "skills": d.skills or [], "disallowedTools": d.disallowedTools,
-                     "prompt_chars": len(d.prompt), "dropped": sorted(ag.dropped)})
+                     "prompt_chars": len(d.prompt), "dropped": sorted(ag.dropped), "autoCompactWindow": ag.auto_compact_window})
     if a.json:
         print(json.dumps(rows, indent=2))
     else:
@@ -51,6 +51,7 @@ def _cmd_check(a) -> int:
         d = ag.definition
         if not d.description or not d.prompt:
             problems.append("%s: empty description or prompt" % name)
+        problems.extend(ag.problems)
         if set(ag.dropped) - {"color"}:
             problems.append("%s: frontmatter keys the SDK cannot model: %s" % (name, sorted(set(ag.dropped) - {"color"})))
     for p in problems:
@@ -120,7 +121,10 @@ async def _run(a) -> int:
 
 
 def _learn_before() -> None:
-    """SDK sessions may run without the SessionStart hook: apply pending learned values first."""
+    """SDK sessions may run without the SessionStart hook: apply pending learned values first.
+
+    Unlike the hook, this runs before the CLI starts and loads agent definitions, so what it writes
+    is in force for this run."""
     try:
         from stack import hooks
         for c in hooks._apply_learned():

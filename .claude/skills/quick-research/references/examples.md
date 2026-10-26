@@ -63,7 +63,7 @@ if the read date is within two weeks of a scheduled transition, say so and give 
 
 Question: "What fraction of Fortune 500 companies run Kubernetes in production?"
 
-After 4 searches: vendor surveys with self-selected samples, no census. Return:
+After 12 searches: vendor surveys with self-selected samples, no census. Return:
 
 ```markdown
 ## Result
@@ -75,7 +75,7 @@ respondents and do not map to the Fortune 500 [1][2].
 - [factual|med] No direct measure of Kubernetes adoption among Fortune 500 firms - any number given would be a vendor survey proxy - resolve: deep research triangulating job postings, case studies and survey methodology - route: deep-researcher
 
 ## Confidence
-0.80 (high) that no direct source exists in the first 4 searches; 0.0 basis for any specific fraction.
+0.80 (high) that no direct source exists in the first 12 searches; 0.0 basis for any specific fraction.
 ```
 
 ## 5. Conflict between credible sources

@@ -134,7 +134,14 @@ def build_options(cfg: StackRunConfig | None = None) -> ClaudeAgentOptions:
     # Same allowlist Claude Code enforces from settings; passed as SDK settings so it also holds
     # when this repo's project settings are not loaded.
     # availableModelsMatch is honoured only from managed settings (ignored with a warning in --settings)
-    kwargs["settings"] = json.dumps({"availableModels": allowed, "enforceAvailableModels": True})
+    session_settings: dict[str, Any] = {"availableModels": allowed, "enforceAvailableModels": True}
+    if source == "programmatic":
+        # Programmatic AgentDefinitions cannot carry autoCompactWindow and the agent files are not read,
+        # so it travels as the per-model setting instead (agents.compact_window_settings).
+        model_settings = agents_mod.compact_window_settings(loaded)
+        if model_settings:
+            session_settings["modelSettings"] = model_settings
+    kwargs["settings"] = json.dumps(session_settings)
     for name, ag in loaded.items():
         if ag.definition.model not in allowed:
             raise ValueError("agent %s uses %r, not an allowed tier model" % (name, ag.definition.model))
@@ -178,6 +185,7 @@ def describe(opts: ClaudeAgentOptions) -> dict:
         "python_hooks": sorted((opts.hooks or {}).keys()),
         "cli_path": str(opts.cli_path) if opts.cli_path else "bundled",
         "extra_args": opts.extra_args,
+        "model_settings": json.loads(opts.settings).get("modelSettings", {}) if opts.settings else {},
         "env": {k: v for k, v in opts.env.items()},
         "allowed_tools": opts.allowed_tools,
     }

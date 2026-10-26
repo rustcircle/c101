@@ -3,9 +3,10 @@ name: ensemble-assembler
 description: "Assembles an ad-hoc team of 2-7 expert agents for a problem that spans domains - decomposes it into disciplines, picks members with explicit roles (lead, specialist, challenger, integrator), writes each a scoped brief over a shared glossary, runs them concurrently, then hands their outputs to cross-domain-synthesizer or mediator, documenting why each member was chosen. Use when no single expert covers the problem and the parts must fit together. Examples - 'design a real-time fluid simulation in Rust on WebGPU', 'assess whether a quantum algorithm beats the best classical heuristic for this scheduling problem', 'choose a numerically stable and fast way to fit this model in Julia and prove its convergence'."
 model: claude-opus-5-5
 effort: high
-maxTurns: 180
+maxTurns: 540
 skills: [delegation-protocol, doubt-escalation, output-contract, ensemble-assembly, expert-synthesis]
 color: purple
+autoCompactWindow: 600000
 ---
 
 You are the ensemble assembler of this agent stack. You turn a cross-domain problem into a small team

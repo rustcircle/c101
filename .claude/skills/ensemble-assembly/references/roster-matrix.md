@@ -8,34 +8,34 @@ Model / effort / maxTurns are the initial values from `config/models.json` (`bin
 
 | Agent | Model / effort | maxTurns | MCP | Best for | Not for |
 |-------|----------------|----------|-----|----------|---------|
-| `computer-science-expert` | opus / xhigh | 150 | - | algorithms and bounds, data structure choice, consistency models, consensus, type systems, compilers, TLA+ style reasoning | language-specific idioms, measured performance |
-| `mathematics-expert` | opus / max | 180 | - | proofs, probability and statistics, optimisation, numerical analysis (stability, error bounds, conditioning) | domain modelling assumptions (pair with physics or CS) |
-| `physics-expert` | opus / xhigh | 150 | - | physical models, dimensional analysis, limiting cases, simulation integrators and their conservation properties | software design |
-| `quantum-computing-expert` | opus / xhigh | 150 | context7 | circuits, algorithms, QEC and decoders, resource estimation, SDK specifics | classical complexity claims beyond BQP context (pair with CS) |
-| `computer-graphics-expert` | opus / high | 150 | context7 | rendering, sampling, BRDFs, GPU APIs and shaders, geometry processing, colour pipelines | general GPU compute performance tuning outside graphics (pair with code-optimizer) |
-| `graphic-design-expert` | opus / high | 120 | image-gen, image-edit, image-vector | layout, typography, colour, brand, accessible contrast, art direction | image pipeline engineering |
-| `rust-expert` | opus / high | 180 | context7 | ownership designs, async, unsafe/FFI audits, no_std, cargo workspaces | algorithmic optimality proofs |
-| `cpp-expert` | opus / high | 180 | context7 | modern C++, memory model, UB, sanitizers, SIMD, CMake | Rust or managed runtimes |
-| `haskell-expert` | opus / high | 180 | context7 | typed FP design, effects, laziness and space leaks, property testing | low-level systems performance |
-| `go-expert` | sonnet / high | 180 | context7 | Go services, concurrency with context, pprof, modules | heavy numerics |
-| `julia-expert` | sonnet / high | 180 | context7 | scientific Julia, DifferentialEquations.jl, JuMP, type stability, CUDA.jl | production service architecture |
-| `java-expert` | sonnet / high | 180 | context7 | modern Java, virtual threads, JVM GC and JFR, JMH | Kotlin coroutine semantics |
-| `kotlin-expert` | sonnet / high | 180 | context7 | coroutines and Flow, structured concurrency, Multiplatform, Compose | JVM GC tuning |
-| `python-expert` | sonnet / high | 180 | context7 | typed Python (mypy/pyright), asyncio with TaskGroup, uv packaging, pytest, FastAPI and pydantic v2, profiling | numeric kernels needing native code |
-| `typescript-expert` | sonnet / high | 180 | context7 | strict TypeScript, ESM/CJS and package exports, Node services, Vitest/Jest, React components | browser rendering performance, GPU |
+| `computer-science-expert` | opus / xhigh | 450 | - | algorithms and bounds, data structure choice, consistency models, consensus, type systems, compilers, TLA+ style reasoning | language-specific idioms, measured performance |
+| `mathematics-expert` | opus / max | 540 | - | proofs, probability and statistics, optimisation, numerical analysis (stability, error bounds, conditioning) | domain modelling assumptions (pair with physics or CS) |
+| `physics-expert` | opus / xhigh | 450 | - | physical models, dimensional analysis, limiting cases, simulation integrators and their conservation properties | software design |
+| `quantum-computing-expert` | opus / xhigh | 450 | context7 | circuits, algorithms, QEC and decoders, resource estimation, SDK specifics | classical complexity claims beyond BQP context (pair with CS) |
+| `computer-graphics-expert` | opus / high | 450 | context7 | rendering, sampling, BRDFs, GPU APIs and shaders, geometry processing, colour pipelines | general GPU compute performance tuning outside graphics (pair with code-optimizer) |
+| `graphic-design-expert` | opus / high | 360 | image-gen, image-edit, image-vector | layout, typography, colour, brand, accessible contrast, art direction | image pipeline engineering |
+| `rust-expert` | opus / high | 540 | context7 | ownership designs, async, unsafe/FFI audits, no_std, cargo workspaces | algorithmic optimality proofs |
+| `cpp-expert` | opus / high | 540 | context7 | modern C++, memory model, UB, sanitizers, SIMD, CMake | Rust or managed runtimes |
+| `haskell-expert` | opus / high | 540 | context7 | typed FP design, effects, laziness and space leaks, property testing | low-level systems performance |
+| `go-expert` | sonnet / high | 540 | context7 | Go services, concurrency with context, pprof, modules | heavy numerics |
+| `julia-expert` | sonnet / high | 540 | context7 | scientific Julia, DifferentialEquations.jl, JuMP, type stability, CUDA.jl | production service architecture |
+| `java-expert` | sonnet / high | 540 | context7 | modern Java, virtual threads, JVM GC and JFR, JMH | Kotlin coroutine semantics |
+| `kotlin-expert` | sonnet / high | 540 | context7 | coroutines and Flow, structured concurrency, Multiplatform, Compose | JVM GC tuning |
+| `python-expert` | sonnet / high | 540 | context7 | typed Python (mypy/pyright), asyncio with TaskGroup, uv packaging, pytest, FastAPI and pydantic v2, profiling | numeric kernels needing native code |
+| `typescript-expert` | sonnet / high | 540 | context7 | strict TypeScript, ESM/CJS and package exports, Node services, Vitest/Jest, React components | browser rendering performance, GPU |
 
 ## Cross-cutting members
 
 | Agent | Model / effort | maxTurns | Use as | Notes |
 |-------|----------------|----------|--------|-------|
-| `architect` | opus / xhigh | 120 | lead for system-level designs; specialist for component boundaries | explores 2-4 candidate designs; expensive, so give it the central SQ or none |
-| `security-auditor` | opus / high | 120 | specialist on trust boundaries, authn/authz, injection, secrets, supply chain | its sustained objections should be blocking by default in the authority table |
-| `code-optimizer` | opus / high | 150 | specialist on measured performance budgets | demands benchmarks; good antidote to speculative performance claims |
-| `first-principles-decomposer` | opus / xhigh | 90 | challenger | separates hard constraints from conventions; proposes non-obvious alternatives |
-| `analogy-mapper` | opus / high | 90 | challenger or specialist for "has another field solved this?" | cites the source domain's canonical method |
-| `paper-researcher` | opus / high | 120 | specialist on state of the art and prior results | jina + exa; reads papers, builds comparison tables |
-| `deep-researcher` | opus / high | 240 | evidence gatherer before the ensemble, not usually a member | a coordinator; needs depth below it |
-| `tester` | sonnet / high | 150 | empirical arbiter for runtime questions during or after the wave | not a member by default |
+| `architect` | opus / xhigh | 360 | lead for system-level designs; specialist for component boundaries | explores 2-4 candidate designs; expensive, so give it the central SQ or none |
+| `security-auditor` | opus / high | 360 | specialist on trust boundaries, authn/authz, injection, secrets, supply chain | its sustained objections should be blocking by default in the authority table |
+| `code-optimizer` | opus / high | 450 | specialist on measured performance budgets | demands benchmarks; good antidote to speculative performance claims |
+| `first-principles-decomposer` | opus / xhigh | 270 | challenger | separates hard constraints from conventions; proposes non-obvious alternatives |
+| `analogy-mapper` | opus / high | 270 | challenger or specialist for "has another field solved this?" | cites the source domain's canonical method |
+| `paper-researcher` | opus / high | 360 | specialist on state of the art and prior results | jina + exa; reads papers, builds comparison tables |
+| `deep-researcher` | opus / high | 720 | evidence gatherer before the ensemble, not usually a member | a coordinator; needs depth below it |
+| `tester` | sonnet / high | 450 | empirical arbiter for runtime questions during or after the wave | not a member by default |
 
 ## Integrators and deciders (after the wave)
 

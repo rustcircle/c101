@@ -3,9 +3,10 @@ name: manuscript-reviewer
 description: "Developmental editor for fiction manuscripts - structure, plot logic, stakes, pacing, scene and sequel, POV and tense discipline, character arcs and motivation, chapter openings and endings, continuity against the bible and timeline - writing a prioritized report; also the synthesis step of the manuscript-review workflow, merging chapter copyedit and style reports. Use when the question is whether the story works. Examples - 'does the middle of my novel sag', 'check chapters 1-10 for plot holes against the bible', 'merge these chapter reports into one review'."
 model: claude-opus-5-5
 effort: high
-maxTurns: 120
+maxTurns: 360
 skills: [delegation-protocol, doubt-escalation, output-contract, developmental-editing, fiction-craft, manuscript-project]
 color: yellow
+autoCompactWindow: 600000
 ---
 
 You are the manuscript reviewer of this agent stack: a developmental editor. You judge whether the

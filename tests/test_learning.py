@@ -282,19 +282,34 @@ class SessionLifecycleTests(unittest.TestCase):
         fm = frontmatter.read(self.agent)
         self.assertEqual((fm["maxTurns"], fm["effort"]), ("60", "high"))
 
-    def test_session_end_records_without_applying(self):
-        from stack import frontmatter
+    def _run_after_session(self, apply_on):
         from stack.learn import engine
-        real_ingest, real_update = engine.ingest_transcript, engine.update
+        real_ingest, real_update, real_cfg = engine.ingest_transcript, engine.update, engine.load_config
         engine.ingest_transcript = lambda tp: 2
         engine.update = lambda only=None: {"agents": {}}
+        engine.load_config = lambda: dict(real_cfg(), apply_on=apply_on)
         try:
-            res = engine.run_after_session("/p/proj/S1.jsonl")
+            return engine.run_after_session("/p/proj/S1.jsonl")
         finally:
-            engine.ingest_transcript, engine.update = real_ingest, real_update
+            engine.ingest_transcript, engine.update, engine.load_config = real_ingest, real_update, real_cfg
+
+    def test_session_end_records_without_applying_under_legacy_session_start(self):
+        from stack import frontmatter
+        res = self._run_after_session("session_start")
         self.assertTrue(res["recorded"])
         self.assertEqual(res["changes"], [])
         self.assertEqual(frontmatter.read(self.agent)["maxTurns"], "40")
+
+    def test_session_end_applies_by_default(self):
+        """Claude Code loads agent definitions once per session, so the values must be on disk when it ends."""
+        from stack import frontmatter
+        from stack.learn import engine
+        self.assertEqual(engine.apply_on(), "session_end")  # shipped config/learning.json
+        res = self._run_after_session("session_end")
+        self.assertTrue(res["recorded"])
+        self.assertEqual(res["changes"][0]["updates"], {"maxTurns": "60", "effort": "high"})
+        fm = frontmatter.read(self.agent)
+        self.assertEqual((fm["maxTurns"], fm["effort"]), ("60", "high"))
 
 
 if __name__ == "__main__":

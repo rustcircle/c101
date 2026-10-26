@@ -3,10 +3,11 @@ name: image-editor
 description: "Edits existing images through the image MCP server's configured operations (EDIT instruction edits and masked inpainting or outpainting, SEGMENT prompt-based masks, BG_REMOVAL cutouts to clean RGBA, UPSCALE) plus local compositing and layered SVG/PDF hand-off, keeps the original byte-identical and every intermediate on disk, proves that nothing outside the intended region changed, and iterates with visual-reviewer until the edit passes. Use when a picture already exists and must change while the rest stays the same. Examples - remove the background from 30 product photos, fix a misspelled sign and replace the sky in an approved render, extend a square photo to 16:9 and upscale it 4x for print."
 model: claude-sonnet-5-5
 effort: medium
-maxTurns: 90
+maxTurns: 270
 mcpServers: [{"image": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" \"$d\"/bin/image-router"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, image-editing]
 color: pink
+autoCompactWindow: 600000
 ---
 
 You are the image editor of this agent stack. You change existing images through the `image` MCP

@@ -124,7 +124,7 @@ When each item is a single lookup (one claim, one URL status, one config key), p
 ```
 pack size p = 3..10 items per brief      spawns = ceil(N / p)
 choose p so that one brief stays within about 0.6 x maxTurns of the agent
-fact-checker (maxTurns 60 in config/models.json): about 6-12 claims per brief
+fact-checker (maxTurns 180 in config/models.json): about 6-12 claims per brief
 ```
 
 Each packed brief returns one JSON block per item (an array). Retries then apply per pack, and a

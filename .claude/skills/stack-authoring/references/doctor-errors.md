@@ -20,7 +20,7 @@ reported as `<checker>: checker crashed: ...` and the others still run.
 | `unknown frontmatter key '...' (Claude Code would ignore it)` | Typo (`maxturns`, `mcp_servers`) or a key Claude Code does not support | Use only: name, description, tools, disallowedTools, model, effort, maxTurns, mcpServers, skills, memory, hooks, permissionMode, isolation, background, color, initialPrompt, omitClaudeMd, autoCompactWindow, experimental |
 | `unknown model '...'` | Not an alias (opus, sonnet, haiku, fable, inherit, default, best, opusplan, opus[1m], sonnet[1m]) and not a `claude-*` id | Let the tier render it: `bin/stack agents set <name> tier=<TIER>` |
 | `effort must be one of [...]` | Typo or unsupported level | low, medium, high, xhigh, max |
-| `maxTurns must be an integer 1..2000, got ...` | Quoted number, float, or out of range | Bare integer |
+| `maxTurns must be an integer 1..3000, got ...` | Quoted number, float, or out of range | Bare integer |
 | `autoCompactWindow must be an integer 100000..1000000` | Out of range | Remove it or use a valid window |
 | `color must be one of [...]` | e.g. `gray` | red, blue, green, yellow, purple, orange, pink, cyan |
 | `mcpServers references unknown server '...'` | Name not in `config/mcp.servers.json`, `.mcp.json` or the built-ins (optional servers are not active) | Use a catalog server (`bin/stack agents set <name> mcpServers=a,b`), or `bin/stack mcp enable <name>` first; built-in `computer-use` only with a playwright/peekaboo fallback (it is absent under the SDK/-p); do not use `claude-in-chrome` (absent under the SDK/-p) |

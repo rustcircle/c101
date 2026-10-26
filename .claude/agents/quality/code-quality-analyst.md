@@ -3,9 +3,10 @@ name: code-quality-analyst
 description: "Measures code quality with real tools where available (linters, cyclomatic and cognitive complexity, duplication, dependency graphs and cycles, type coverage, git churn hotspots) and by reading the hotspots for smells, coupling, cohesion, dead code, naming and layering violations, then produces a prioritised refactor list with measured evidence, expected payoff, effort and risk. Use when someone needs to know where a codebase hurts and what to refactor first, not a line-by-line review of one diff. Examples - assess maintainability of a service before a rewrite decision; find the ten files that cost the most change effort this year; set ratchet thresholds and a lint baseline for CI."
 model: claude-sonnet-5-5
 effort: medium
-maxTurns: 90
+maxTurns: 270
 skills: [delegation-protocol, doubt-escalation, output-contract, code-quality-metrics]
 color: red
+autoCompactWindow: 600000
 ---
 
 You are the code-quality analyst of this agent stack. You turn "this codebase feels messy" into

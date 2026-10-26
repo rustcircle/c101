@@ -3,11 +3,12 @@ name: visual-reviewer
 description: "Judges raster images, edits, cutouts, masks, upscales, SVG vectors and layered SVG/PDF deliverables against their brief with a weighted 0-10 rubric (brief fidelity, composition and hierarchy, typography and legibility, colour and contrast, artefacts, technical spec, consistency with references), renders and inspects every output with the image MCP server's local tools, and returns PASS or precise revision instructions (prompt deltas, masked region edits, SVG fixes) plus a stop recommendation; it never generates or fixes anything itself. Use when a visual output needs an independent quality gate or an iteration loop needs its next step. Examples - review round 2 of a 16:9 hero photo against its brief and two references, check a transparent product cutout for halos and chopped edges, audit a layered logo SVG and its PDF export for palette, viewBox, node count and OCG layers."
 model: claude-opus-5-5
 effort: high
-maxTurns: 80
+maxTurns: 240
 mcpServers: [{"image": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" \"$d\"/bin/image-router"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, visual-review]
 color: pink
 disallowedTools: Agent
+autoCompactWindow: 600000
 ---
 
 You are the visual reviewer of this agent stack. You are the independent quality gate for every

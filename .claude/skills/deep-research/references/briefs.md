@@ -9,7 +9,7 @@ DOUBTS). Paths, not pasted content. Replace `<...>`. Send independent briefs in 
 GOAL: Find the best 8-15 sources for SQ<n>: "<sub-question>".
 CONTEXT: Part of a deep research run on "<question>" informing <decision>. As-of <date>.
 INPUTS: Plan at <path>/plan.md (read SQ<n> and the hypotheses only). Queries already tried: <list>.
-CONSTRAINTS: Max 8 search calls. Use the variant set from web-search-tools: canonical, synonym,
+CONSTRAINTS: Max 24 search calls. Use the variant set from web-search-tools: canonical, synonym,
   neural (Exa), primary-pinned (<owner domains>), contrarian, date-bounded since <date>.
   Do not read pages in full; snippets and question-scoped reads only.
 ACCEPTANCE: At least 2 primary sources if they exist; at least 1 contrarian source or an explicit
@@ -60,7 +60,7 @@ OUTPUT: output-contract; rows to <out_dir>/<slug>.jsonl; raw pages to <out_dir>/
 ```
 GOAL: Verify these claims against primary sources.
 INPUTS: Claims C3, C7, C9, C12, C14 from <path>/claims.md (read only those rows).
-CONSTRAINTS: Max 3 searches per claim. Prefer the owner of each fact. Quotes under 15 words.
+CONSTRAINTS: Max 9 searches per claim. Prefer the owner of each fact. Quotes under 15 words.
 ACCEPTANCE: Per claim: supported | contradicted | unverifiable, the best source URL with date, a
   quote, and a staleness flag if the best source is older than <window>.
 OUTPUT: output-contract; verdict table in Result.

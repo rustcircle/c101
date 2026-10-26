@@ -89,8 +89,14 @@ def recommend_agent(name: str, obs: List[dict], current: Dict[str, object], cfg:
     n_eff = tmodel.n_eff
     out["window"] = {"gamma": gamma, "effective_runs": round(effective_window(gamma, n), 1),
                      "scores": {str(k): round(v, 2) for k, v in scores.items()}}
+    wsum = sum(w) or 1.0
+    capped_frac = sum(wi for o, wi in zip(tseries, w) if o.censored) / wsum
+    longest_uncapped = max((o.value for o in tseries if not o.censored), default=0.0)
+    lower_floor = int(math.ceil(cfg.get("lower_floor_factor", 1.5) * longest_uncapped))
     out["turns"] = dict(_quantiles(tmodel, (0.5, 0.9, 0.95, 0.99)),
-                        n_eff=round(n_eff, 2), n_capped=sum(1 for o in tseries if o.censored))
+                        n_eff=round(n_eff, 2), n_capped=sum(1 for o in tseries if o.censored),
+                        last_capped=tseries[-1].censored, capped_frac=round(capped_frac, 3),
+                        lower_floor=lower_floor)
 
     lo_t, hi_t = bounds.get("maxTurns", cfg["default_bounds"]["maxTurns"])
     rec_turns = cur_turns
@@ -101,7 +107,29 @@ def recommend_agent(name: str, obs: List[dict], current: Dict[str, object], cfg:
             step = cfg["max_step_factor"]
             target = int(_clamp(target, math.floor(cur_turns / step), math.ceil(cur_turns * step)))
         target = int(_clamp(target, lo_t, hi_t))
-        if cur_turns is None or abs(target - cur_turns) >= max(2, cfg["min_change_frac"] * cur_turns):
+        # Lowering is the costly direction (a cut-off run loses its work), so it needs more evidence
+        # than raising: enough effective runs, the latest run not itself capped, few capped runs in the
+        # effective window (with many, the upper tail is extrapolated from censored data), and never
+        # below lower_floor_factor x the longest run that finished.  Raising is unaffected; bounds are
+        # still enforced.  engine.apply() re-checks the same evidence before writing.
+        hold = None
+        if cur_turns and target < cur_turns:
+            min_lower = cfg.get("min_obs_lower", 8)
+            max_cf = cfg.get("max_capped_frac_lower", 0.10)
+            if n_eff < min_lower:
+                hold = "hold: lowering needs n_eff >= %g (have %.1f)" % (min_lower, n_eff)
+            elif tseries[-1].censored:
+                hold = "hold: most recent run hit the cap"
+            elif capped_frac > max_cf:
+                hold = "hold: %.0f%% of effective runs capped (> %.0f%%)" % (100 * capped_frac, 100 * max_cf)
+            elif lower_floor >= cur_turns:
+                hold = "hold: longest uncapped run x %.1f >= current" % cfg.get("lower_floor_factor", 1.5)
+            elif target < lower_floor:
+                target = int(_clamp(lower_floor, lo_t, hi_t))
+        if hold:
+            rec_turns = int(_clamp(cur_turns, lo_t, hi_t))
+            reason = hold
+        elif cur_turns is None or abs(target - cur_turns) >= max(2, cfg["min_change_frac"] * cur_turns):
             rec_turns = target
             reason = "q%02d of predictive x %.2f margin" % (round(cfg["turns_quantile"] * 100), cfg["turns_margin"])
         else:
@@ -169,12 +197,20 @@ def recommend_agent(name: str, obs: List[dict], current: Dict[str, object], cfg:
     if "ctx_peak" in toks:
         cur_win = current.get("autoCompactWindow")
         cur_win = int(cur_win) if str(cur_win or "").isdigit() else cfg["context_window_tokens"]
+        lo_w, hi_w = bounds.get("autoCompactWindow",
+                                cfg["default_bounds"].get("autoCompactWindow", [600000, 1000000]))
         budget["recommend_1m_context"] = toks["ctx_peak"]["max"] > cfg["context_window_tokens"] * cfg["context_pressure"]
         # Quality first: when the context regularly approaches the compaction point, raise the
         # window so long tasks are not compacted (lossily) mid-flight. Never lowers it.
+        # Bounds from config (default_bounds / per-agent autoCompactWindow); a window below the floor
+        # is raised to it.
+        want = None
         if n_eff >= cfg["min_obs_turns"] and toks["ctx_peak"]["max"] > cur_win * cfg["context_pressure"]:
             want = int(math.ceil(toks["ctx_peak"]["max"] * cfg["turns_margin"] / 10000.0) * 10000)
-            want = int(_clamp(want, 100000, 1000000))
+        if cur_win < lo_w:
+            want = max(want or 0, lo_w)
+        if want is not None:
+            want = int(_clamp(want, lo_w, hi_w))
             if want > cur_win:
                 budget["autoCompactWindow"] = want
     out["budget"] = budget

@@ -3,10 +3,11 @@ name: python-expert
 description: "Python specialist that builds, reviews, debugs and tunes typed, idiomatic Python (strict mypy or pyright, asyncio with TaskGroup, uv-managed pyproject and lockfiles, pytest, FastAPI and pydantic v2) and proves each change with ruff, the type checker, pytest and py-spy or pyperf numbers. Use when the work touches Python code, pyproject.toml, uv.lock or a Python service. Examples - an asyncio service that deadlocks or stalls on a blocking call in the event loop; a package that must pass mypy --strict; a uv resolution failure or a slow pandas or pure-Python hot loop needing profiler evidence."
 model: claude-sonnet-5-5
 effort: high
-maxTurns: 180
+maxTurns: 540
 mcpServers: [{"context7": {"type": "http", "url": "https://mcp.context7.com/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" context7"}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, python-craft]
 color: green
+autoCompactWindow: 600000
 ---
 
 You are the Python expert of this agent stack. You write explicit, typed, boring Python: data parsed

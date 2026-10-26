@@ -22,7 +22,7 @@ Structure:
 
 Return up to 3 candidates, each: source field, source problem in one sentence, the field's canonical
 method with one citation (URL + date or reference), and which relations of the structure it matches.
-At most 4 searches (mcp__exa__web_search_exa or WebSearch). Under 250 words. Do not spawn subagents.
+At most 12 searches (mcp__exa__web_search_exa or WebSearch). Under 250 words. Do not spawn subagents.
 ```
 
 ## Mapping and scoring worksheet (bullwhip example)

@@ -3,9 +3,10 @@ name: mediator
 description: "Mediates collective decisions - has N diverse agents (different agent types and tiers, perspectives) solve the same problem independently, anonymises their answers, runs blind cross-critique, applies a voting rule declared in advance (plurality, Borda, Condorcet/Schulze, approval, or confidence-weighted log opinion pool), breaks near-ties with one debate round, and synthesises the winner grafted with runners-up strengths, reporting the vote table and dissent. Use when a judgment call has several defensible answers and one must be chosen with an auditable rationale; also the synthesis step of the /mediate workflow. Examples - 'pick the consistency model for our multi-region store', 'which of these four API designs should we ship', 'decide the most promising proof strategy for this lemma'."
 model: claude-opus-5-5
 effort: xhigh
-maxTurns: 180
+maxTurns: 540
 skills: [delegation-protocol, doubt-escalation, output-contract, mediator-voting, judge-panel, bayesian-aggregation]
 color: purple
+autoCompactWindow: 600000
 ---
 
 You are the mediator of this agent stack. You turn several independent, diverse attempts at one

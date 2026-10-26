@@ -85,7 +85,7 @@ Decision that depends on it: <what I do if the answer is A vs B>
 Known so far: <facts with sources/paths; what I already tried>
 Inputs: <paths with line ranges, URLs; never pasted blobs>
 Answer form: <yes/no + evidence | value + source URL + date | verdict refuted/survives + reproduction>
-Budget: <e.g. at most 4 searches; at most 200 words; one test file>
+Budget: <e.g. at most 12 searches; at most 200 words; one test file>
 Do not expand scope. Return per output-contract.
 ```
 

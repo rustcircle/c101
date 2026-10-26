@@ -2,7 +2,7 @@
   "_doc": "Bayesian self-tuning of agent budgets. See docs/LEARNING.md. Per-agent overrides go in 'agents'.",
   "enabled": true,
   "auto_apply": true,
-  "apply_on": "session_start",
+  "apply_on": "session_end",
   "turns_quantile": 0.95,
   "turns_margin": 1.15,
   "prior_limit_ratio": 3.0,
@@ -10,6 +10,9 @@
   "prior_spread": 2.5,
   "min_obs_turns": 3,
   "min_obs_effort": 5,
+  "min_obs_lower": 8,
+  "max_capped_frac_lower": 0.1,
+  "lower_floor_factor": 1.5,
   "min_points_for_window": 8,
   "min_change_frac": 0.1,
   "max_step_factor": 2.0,
@@ -48,13 +51,17 @@
       "low",
       "max"
     ],
-    "learn": true
+    "learn": true,
+    "autoCompactWindow": [
+      600000,
+      1000000
+    ]
   },
   "agents": {
     "delegator": {
       "maxTurns": [
-        80,
-        1000
+        900,
+        3000
       ],
       "effort": [
         "medium",
@@ -63,8 +70,8 @@
     },
     "orchestrator": {
       "maxTurns": [
-        60,
-        1000
+        900,
+        3000
       ],
       "effort": [
         "medium",
@@ -73,20 +80,20 @@
     },
     "swarm-coordinator": {
       "maxTurns": [
-        40,
-        1000
+        660,
+        3000
       ]
     },
     "mesh-router": {
       "maxTurns": [
-        40,
-        1000
+        660,
+        3000
       ]
     },
     "mediator": {
       "maxTurns": [
-        40,
-        600
+        540,
+        1800
       ],
       "effort": [
         "high",
@@ -95,14 +102,14 @@
     },
     "deep-researcher": {
       "maxTurns": [
-        40,
-        800
+        120,
+        2400
       ]
     },
     "mathematics-expert": {
       "maxTurns": [
-        40,
-        600
+        540,
+        1800
       ],
       "effort": [
         "high",
@@ -113,18 +120,26 @@
       "effort": [
         "high",
         "max"
+      ],
+      "maxTurns": [
+        360,
+        3000
       ]
     },
     "architect": {
       "effort": [
         "high",
         "max"
+      ],
+      "maxTurns": [
+        360,
+        3000
       ]
     },
     "quick-researcher": {
       "maxTurns": [
-        8,
-        200
+        60,
+        600
       ],
       "effort": [
         "low",
@@ -133,8 +148,8 @@
     },
     "source-summarizer": {
       "maxTurns": [
-        6,
-        200
+        105,
+        600
       ],
       "effort": [
         "low",
@@ -143,8 +158,8 @@
     },
     "file-summarizer": {
       "maxTurns": [
-        6,
-        200
+        120,
+        600
       ],
       "effort": [
         "low",
@@ -153,8 +168,8 @@
     },
     "general-chat": {
       "maxTurns": [
-        6,
-        200
+        105,
+        600
       ],
       "effort": [
         "low",
@@ -163,8 +178,8 @@
     },
     "writing-project-builder": {
       "maxTurns": [
-        10,
-        300
+        180,
+        900
       ],
       "effort": [
         "low",
@@ -173,8 +188,8 @@
     },
     "fiction-writer": {
       "maxTurns": [
-        30,
-        600
+        360,
+        1800
       ],
       "effort": [
         "high",
@@ -183,8 +198,8 @@
     },
     "manuscript-reviewer": {
       "maxTurns": [
-        30,
-        600
+        360,
+        1800
       ],
       "effort": [
         "high",
@@ -193,8 +208,8 @@
     },
     "copy-editor": {
       "maxTurns": [
-        15,
-        500
+        300,
+        1500
       ],
       "effort": [
         "low",
@@ -203,8 +218,8 @@
     },
     "prose-stylist": {
       "maxTurns": [
-        15,
-        500
+        300,
+        1500
       ],
       "effort": [
         "medium",
@@ -213,12 +228,276 @@
     },
     "chat-aide": {
       "maxTurns": [
-        2,
-        20
+        18,
+        60
       ],
       "effort": [
         "low",
         "medium"
+      ]
+    },
+    "computer-graphics-expert": {
+      "maxTurns": [
+        450,
+        3000
+      ]
+    },
+    "computer-science-expert": {
+      "maxTurns": [
+        450,
+        3000
+      ]
+    },
+    "cpp-expert": {
+      "maxTurns": [
+        540,
+        3000
+      ]
+    },
+    "go-expert": {
+      "maxTurns": [
+        540,
+        3000
+      ]
+    },
+    "graphic-design-expert": {
+      "maxTurns": [
+        360,
+        3000
+      ]
+    },
+    "haskell-expert": {
+      "maxTurns": [
+        540,
+        3000
+      ]
+    },
+    "java-expert": {
+      "maxTurns": [
+        540,
+        3000
+      ]
+    },
+    "julia-expert": {
+      "maxTurns": [
+        540,
+        3000
+      ]
+    },
+    "kotlin-expert": {
+      "maxTurns": [
+        540,
+        3000
+      ]
+    },
+    "physics-expert": {
+      "maxTurns": [
+        450,
+        3000
+      ]
+    },
+    "python-expert": {
+      "maxTurns": [
+        540,
+        3000
+      ]
+    },
+    "quantum-computing-expert": {
+      "maxTurns": [
+        450,
+        3000
+      ]
+    },
+    "rust-expert": {
+      "maxTurns": [
+        540,
+        3000
+      ]
+    },
+    "typescript-expert": {
+      "maxTurns": [
+        540,
+        3000
+      ]
+    },
+    "image-editor": {
+      "maxTurns": [
+        270,
+        3000
+      ]
+    },
+    "image-generator": {
+      "maxTurns": [
+        270,
+        3000
+      ]
+    },
+    "vector-artist": {
+      "maxTurns": [
+        270,
+        3000
+      ]
+    },
+    "visual-reviewer": {
+      "maxTurns": [
+        240,
+        3000
+      ]
+    },
+    "agent-architect": {
+      "maxTurns": [
+        360,
+        3000
+      ]
+    },
+    "stack-tuner": {
+      "maxTurns": [
+        180,
+        3000
+      ]
+    },
+    "concurrent-dispatcher": {
+      "maxTurns": [
+        450,
+        3000
+      ]
+    },
+    "ensemble-assembler": {
+      "maxTurns": [
+        540,
+        3000
+      ]
+    },
+    "plan-critic": {
+      "maxTurns": [
+        180,
+        3000
+      ]
+    },
+    "planner": {
+      "maxTurns": [
+        240,
+        3000
+      ]
+    },
+    "adversarial-verifier": {
+      "maxTurns": [
+        48,
+        3000
+      ]
+    },
+    "code-optimizer": {
+      "maxTurns": [
+        450,
+        3000
+      ]
+    },
+    "code-quality-analyst": {
+      "maxTurns": [
+        270,
+        3000
+      ]
+    },
+    "debugger": {
+      "maxTurns": [
+        480,
+        3000
+      ]
+    },
+    "quality-control": {
+      "maxTurns": [
+        210,
+        3000
+      ]
+    },
+    "reviewer": {
+      "maxTurns": [
+        360,
+        3000
+      ]
+    },
+    "security-auditor": {
+      "maxTurns": [
+        360,
+        3000
+      ]
+    },
+    "tester": {
+      "maxTurns": [
+        450,
+        3000
+      ]
+    },
+    "validator": {
+      "maxTurns": [
+        270,
+        3000
+      ]
+    },
+    "browser-operator": {
+      "maxTurns": [
+        450,
+        3000
+      ]
+    },
+    "computer-operator": {
+      "maxTurns": [
+        450,
+        3000
+      ]
+    },
+    "fact-checker": {
+      "maxTurns": [
+        36,
+        3000
+      ]
+    },
+    "paper-researcher": {
+      "maxTurns": [
+        216,
+        3000
+      ]
+    },
+    "web-crawler": {
+      "maxTurns": [
+        360,
+        3000
+      ]
+    },
+    "web-scraper": {
+      "maxTurns": [
+        240,
+        3000
+      ]
+    },
+    "web-searcher": {
+      "maxTurns": [
+        60,
+        3000
+      ]
+    },
+    "analogy-mapper": {
+      "maxTurns": [
+        270,
+        3000
+      ]
+    },
+    "debate-moderator": {
+      "maxTurns": [
+        360,
+        3000
+      ]
+    },
+    "expert-panel-chair": {
+      "maxTurns": [
+        540,
+        3000
+      ]
+    },
+    "first-principles-decomposer": {
+      "maxTurns": [
+        270,
+        3000
       ]
     }
   },

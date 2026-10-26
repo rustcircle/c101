@@ -151,7 +151,7 @@ function workerPrompt(sh, scope, note) {
     '  Then one line per item: "ITEM <key> | <summary> | <severity> | <location>". More than 15 items, or a Result past ~60 lines / ~3k characters: list the top 15 here, put all items in the file and say so.',
     'CROSS-SHARD: if an item depends on something outside your scope, add an Open doubt "XSHARD: <question> -> <unit or path>" and do not chase it.',
     'SPAWNING: do not spawn subagents; ' + S + ' shards run concurrently and share one spawn budget. Return Open doubts instead.',
-    'BUDGET: at most about 40 tool calls (or 60% of your maxTurns if lower); then write the file and return, partial if needed. Zero items is a valid result; say exactly what you checked.',
+    'BUDGET: use at most about 60% of your maxTurns in tool calls (about 120 if you cannot see your maxTurns); then write the file and return, partial if needed. Zero items is a valid result; say exactly what you checked.',
   ].join('\n')
 }
 

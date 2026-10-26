@@ -156,8 +156,8 @@ def check_agents(rep: Report) -> None:
             rep.err(where, "effort must be one of %s" % sorted(EFFORTS))
         mt = fm.get("maxTurns")
         if mt not in (None, ""):
-            if not str(mt).isdigit() or not (1 <= int(mt) <= 2000):
-                rep.err(where, "maxTurns must be an integer 1..2000, got %r" % mt)
+            if not str(mt).isdigit() or not (1 <= int(mt) <= 3000):
+                rep.err(where, "maxTurns must be an integer 1..3000, got %r" % mt)
         acw = fm.get("autoCompactWindow")
         if acw not in (None, ""):
             if not str(acw).isdigit() or not (100000 <= int(acw) <= 1000000):
@@ -215,6 +215,14 @@ def check_tiers(rep: Report) -> None:
         elif cur != models[entry["tier"]]:
             rep.warn(where, "model %r differs from its tier %s=%s (bin/stack agents tiers --apply)"
                      % (cur, entry["tier"], models[entry["tier"]]))
+        acw = frontmatter.read(path).get("autoCompactWindow")
+        if str(acw or "").isdigit():
+            window = tiers.context_windows(cfg).get(str(cur))
+            if window and int(acw) > window:
+                rep.err(where, "autoCompactWindow %s exceeds the %s context window (%d)" % (acw, cur, window))
+            elif int(acw) < tiers.compact_window_floor():
+                rep.warn(where, "autoCompactWindow %s is below the learner floor %d in config/learning.json "
+                         "default_bounds (bin/stack agents tiers --apply raises it)" % (acw, tiers.compact_window_floor()))
     for name in cfg["agents"]:
         if name not in names:
             rep.warn("config/models.json", "tier entry for unknown agent %r" % name)

@@ -65,7 +65,7 @@ tooling) that turns a single session into a coordinated team:
   brief until it passes.
 - **Bayesian self-tuning.** After each session the learner updates per-agent posteriors (censored log-normal tool
   rounds, Dirichlet effort bands, Beta failure rate, token windows) and moves `maxTurns`, effort and context windows
-  within bounds at the next session start (never mid-session), as audited edits to the agent files; `bin/stack learn
+  within bounds when a session ends (never mid-session; read by the next session), as audited edits to the agent files; `bin/stack learn
   history` shows the per-agent trends.
 - **Two runtimes, one definition.** Everything runs interactively (`bin/claude-stack`) and programmatically through
   the Claude Agent SDK (`bin/stack-sdk`); secrets live only in `~/.claude/stack.env`.

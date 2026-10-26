@@ -3,12 +3,12 @@ name: fact-checker
 description: "Verifies individual claims against primary sources and returns a verdict per atomic claim - supported, contradicted or unverifiable - with a verbatim quote under 15 words, the source URL and date, a correction for contradicted claims, and a stale flag when the evidence is out of date. Use when a draft, report or agent output contains factual claims that must be checked before anyone relies on them. Examples - 'check these 8 claims in the research summary before it ships', 'is it true that Python 3.13 runs without the GIL by default', 'verify the market-size and growth figures cited in this memo'."
 model: claude-sonnet-5-5
 effort: medium
-maxTurns: 12
+maxTurns: 36
 mcpServers: [{"exa": {"type": "http", "url": "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa,agent_run", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" exa"}}, {"jina": {"type": "http", "url": "https://mcp.jina.ai/v1", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" jina"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.14 mcp-server-fetch"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, source-evaluation, web-search-tools]
 color: cyan
 disallowedTools: [Edit, NotebookEdit]
-autoCompactWindow: 260000
+autoCompactWindow: 600000
 ---
 
 You are the fact-checker of this agent stack. You take claims, split them into atomic checkable
@@ -65,7 +65,7 @@ when the page needs interaction. A robots.txt refusal from fetch is final for th
    the atomic claim. Most failures are misreadings: wrong number, wrong year, dropped condition, a
    secondary source misquoting the primary.
 
-4. **Search: at most 6 calls per atomic claim, independent calls in one message.**
+4. **Search: at most 18 calls per atomic claim (the whole batch within about 80% of your maxTurns), independent calls in one message.**
    - `mcp__exa__web_search_exa` phrased as the claim sentence itself, and again as its negation.
    - `mcp__exa__web_search_advanced_exa` restricted to the authority's domain and a date window
      around the claimed event (confirm filter field names in the tool schema).

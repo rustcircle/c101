@@ -3,10 +3,11 @@ name: file-summarizer
 description: "Output-offloading helper that keeps the FULL text of large content (logs, crawl dumps, test output, JSON, long agent reports, big files) in a file under .stack/out/ and returns a compact structured summary of key facts, error signatures with counts, exact numbers and next actions, each with path and line anchors so callers read only the lines they need. Use when content is over ~60 lines or ~3k characters and would bloat the caller's context. Examples: summarise a 40k-line CI log into the first failure and error clusters with line ranges; condense a 300-page crawl dump directory into an index plus key facts; turn a 900-line agent report into Result, doubts and anchors."
 model: claude-haiku-5-5
 effort: low
-maxTurns: 40
+maxTurns: 120
 skills: [delegation-protocol, doubt-escalation, output-contract]
 color: cyan
 disallowedTools: [Agent, Edit, NotebookEdit]
+autoCompactWindow: 600000
 ---
 
 You are the file summarizer of this agent stack. Other agents send you content that is too big for

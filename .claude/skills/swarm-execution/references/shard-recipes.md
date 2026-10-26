@@ -87,19 +87,19 @@ the learner may have tuned the frontmatter, so read the agent file if precision 
 
 | Worker | maxTurns (config/models.json) | Comfortable calls per shard | Shard guidance |
 |--------|-------------------------------|-----------------------------|----------------|
-| `reviewer` | 120 | ~72 | 5k LOC deep, 15-30k targeted |
-| `security-auditor` | 120 | ~72 | one trust boundary or service per shard |
-| `code-quality-analyst` | 90 | ~54 | one package; tools first (linters, complexity) |
-| `debugger` | 160 | ~96 | one hypothesis |
-| `tester` | 150 | ~90 | one module's test plan or one grid slice |
-| `code-optimizer` | 150 | ~90 | one hot path |
-| `web-searcher` | 50 | ~30 | one sub-question, 3-6 query variants |
-| `web-scraper` | 80 | ~48 | 8-15 URLs |
-| `web-crawler` | 120 | ~72 | one domain or path prefix |
-| `paper-researcher` | 120 | ~72 | 5-10 papers |
-| `fact-checker` | 60 | ~36 | 6-12 claims |
-| `source-summarizer` | 35 | ~21 | 3-6 sources |
-| `file-summarizer` | 40 | ~24 | one large file or log |
+| `reviewer` | 360 | ~216 | 5k LOC deep, 15-30k targeted |
+| `security-auditor` | 360 | ~216 | one trust boundary or service per shard |
+| `code-quality-analyst` | 270 | ~162 | one package; tools first (linters, complexity) |
+| `debugger` | 480 | ~288 | one hypothesis |
+| `tester` | 450 | ~270 | one module's test plan or one grid slice |
+| `code-optimizer` | 450 | ~270 | one hot path |
+| `web-searcher` | 150 | ~90 | one sub-question, 3-6 query variants |
+| `web-scraper` | 240 | ~144 | 8-15 URLs |
+| `web-crawler` | 360 | ~216 | one domain or path prefix |
+| `paper-researcher` | 360 | ~216 | 5-10 papers |
+| `fact-checker` | 180 | ~108 | 6-12 claims |
+| `source-summarizer` | 105 | ~63 | 3-6 sources |
+| `file-summarizer` | 120 | ~72 | one large file or log |
 
 Shard guidance is bounded by context (read budget), not only by turns: more turns do not justify
 larger shards.

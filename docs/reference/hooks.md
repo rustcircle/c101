@@ -81,6 +81,11 @@ The `uv run` fallback adds resolver start-up to every call; `./install.sh` creat
 
 ## `pre-agent`: depth guard, spawn rules, budgets and tier stripping
 
+After every check has passed, `pre_agent` records the target agent file's `maxTurns` at that moment, keyed by the
+Agent call's `tool_use_id` (`<data>/spawns/<session_id>.jsonl`, fail-open, pruned after 14 days at SessionEnd): agent
+files can change during a session, so this is the limit the run was started under, and the learner prefers it
+(`limit_basis: "spawn_record"`) to the file's value at stop time.
+
 Since the web-content safety layer, `pre_agent` also checks the caller's taint between the spawn rules and
 the token budget: an agent that read flagged web content may only spawn `tainted_may_spawn` agents (deny for
 subagents, `ask` for the main thread). See [Web content safety](web-safety.md#web-content-safety-prompt-injection).
@@ -154,7 +159,7 @@ with the reaction the protocol requires, in [The pre-agent hook](delegation.md#t
 
 ## `subagent-stop`: telemetry and mid-session learning
 
-1. Appends `{"agent_id", "agent_type", "effort", "ts"}` to `<data>/stops/<session_id>.jsonl` (only when both
+1. Appends `{"agent_id", "agent_type", "effort", "stop_reason", "limit_max_turns", "limit_basis", "ts"}` to `<data>/stops/<session_id>.jsonl` (only when both
    `session_id` and `agent_id` are present). The `SubagentStop` payload is the only authoritative source of the
    effort level a subagent actually ran at; the learner prefers it over the per-line transcript value.
 2. Takes `<data>/learn.lock` with `LOCK_EX | LOCK_NB`. If another ingest holds it, returns: that ingest will see this
@@ -165,17 +170,18 @@ with the reaction the protocol requires, in [The pre-agent hook](delegation.md#t
    `last_ingest`.
 5. If `<data>/last_update` is older than `midsession_update_minutes` (`30`), runs `engine.update()` (posteriors,
    `budgets.json`, learned global budgets), then touches `last_update`. It never applies: agent files do not change
-   while a session runs; the recommendations are written at the next session start.
+   while a session runs; the recommendations are written when the session ends.
 
 ## `session-start`: status line
 
-First applies pending learned values (`_apply_learned`): when `engine.apply_on()` is `"session_start"` (the default;
-`"never"` when `config/learning.json` `enabled` or `auto_apply` is `false`) it takes `<data>/learn.lock` with
-`LOCK_EX | LOCK_NB` and runs `engine.start_of_session()` (`engine.apply()`). If a previous session's detached
-`learn run` still holds the lock, nothing is applied and it happens next time. Exceptions go to `hook-errors.log` and
-never block the start. Claude Code hot-reloads agent files ("the next delegation uses the updated definition, with
-no restart needed", [sub-agents](https://code.claude.com/docs/en/sub-agents)), so the values take effect from this
-session's next delegation.
+It applies pending learned values as a catch-up (`_apply_learned`): when
+`engine.apply_on()` is `"session_end"` (the default) or `"session_start"` (`"never"` when `config/learning.json`
+`enabled` or `auto_apply` is `false`) it takes `<data>/learn.lock` with `LOCK_EX | LOCK_NB` and runs `engine.apply()`.
+If a previous session's detached `learn run` still holds the lock, nothing is applied and that run applies.
+Exceptions go to `hook-errors.log` and never block the start. `engine.apply()` compares every value with the file as
+it is now and returns only real writes, so the catch-up is silent after a SessionEnd apply. Claude Code re-reads a
+changed agent file from the next turn, but its file watcher may not be running yet during startup, so a catch-up write
+can wait for the next session. The primary apply is the SessionEnd one.
 
 Returns `additionalContext` built from up to three parts:
 
@@ -183,7 +189,7 @@ Returns `additionalContext` built from up to three parts:
 - `Missing keys in ~/.claude/stack.env: <names> (those MCP servers run anonymous or fail).` — the names in
   `policy.json` `expected_keys` (`EXA_API_KEY`, `JINA_API_KEY`, `SPIDER_API_KEY`) whose value is empty or absent.
   `stack/envfile.py` parses the file without executing it; only key names are ever reported.
-- `Applied learned values at session start: <agent> maxTurns=..,effort=..; ...` — the changes just applied; otherwise
+- `Caught up pending learned values (Claude Code reads agent files again from the next turn; a write this early in startup may only reach the next session): <agent> maxTurns=..,effort=..; ...` — the changes just applied; otherwise
 - `Recently self-tuned: <agent> key=value,...; ...` — the last 5 entries of `<data>/changes.jsonl`, only if that file
   was modified within the last 7 days.
 
@@ -194,8 +200,8 @@ Returns `additionalContext` built from up to three parts:
 `/dev/null`, stdout and stderr appended to `<data>/learn.log`, working directory `$REPO`, and returns at once.
 `learn run` waits for `<data>/learn.lock`, then `engine.run_after_session` does nothing if `config/learning.json`
 `enabled` is `false`; otherwise it ingests the session, updates posteriors and records the session's summary line in
-`<data>/history.jsonl` (`engine.record_session`). It applies only when `apply_on` is `"session_end"`; by default the
-next `session-start` applies.
+`<data>/history.jsonl` (`engine.record_session`). It applies when `apply_on` is `"session_end"` (the default), so the new values
+are on disk before the next session loads agent definitions.
 
 ## `prompt-submit`: per-prompt budget note
 

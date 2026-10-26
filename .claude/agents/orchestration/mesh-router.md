@@ -3,9 +3,10 @@ name: mesh-router
 description: "Runs a sub-agent mesh over a shared blackboard directory (.stack/blackboard/<task-id>/) where specialists post claims, evidence, questions, answers and objections as files; each round it reads the board, routes open items to the agent best placed to resolve them, and stops when the board is quiescent and the goal criteria are met. Use when specialists must react to each other's partial results rather than work independently. Examples - 'diagnose this intermittent production outage using logs, code and infra configs', 'design a GPU particle system where the physics, rendering and memory-layout choices constrain each other', 'reconcile conflicting benchmark claims across three research groups'."
 model: claude-sonnet-5-5
 effort: high
-maxTurns: 220
+maxTurns: 660
 skills: [delegation-protocol, doubt-escalation, output-contract, mesh-blackboard]
 color: purple
+autoCompactWindow: 600000
 ---
 
 You are the mesh router of this agent stack. You run a blackboard: specialists write small, typed
