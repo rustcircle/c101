@@ -1,0 +1,115 @@
+# ═══════════════════════════════════════════════════
+# .neuralmemory/surface.nm
+# Neural Memory Knowledge Surface v1
+# Auto-generated from brain.db | Editable by human
+# ═══════════════════════════════════════════════════
+---
+brain: default
+updated: 2026-10-27T00:20:36
+neurons: 104
+synapses: 479
+token_budget: 1200
+depth_available: [surface, detail, deep]
+---
+
+# ── GRAPH ──────────────────────────────────────────
+# Nodes = key concepts. Edges = causal/decisional links.
+# Agent: scan this section to understand the knowledge landscape.
+# Format: [id] content (type) {p:N} →edge→ [target_id_or_text]
+
+[c6] pesquisa.md (concept) {p:6}
+  →co_occurs→ [c3] "shopping_list"
+  →co_occurs→ "RETOMAR"
+  →co_occurs→ "Resume"
+  →co_occurs→ "Users"
+  →co_occurs→ "AFib"
+
+[c7] c101 review pattern: tests that assert live learner-owned frontmatter values… (concept) {p:6}
+  →co_occurs→ [c8] "c101 stack: Claude Code 2.1.310 DOES hot-reload…"
+  →co_occurs→ [c8] "c101 stack: Claude Code 2.1.310 DOES hot-reload…"
+  →involves→ "apply_on"
+  →involves→ "Assert"
+  →stored_by→ [c7] "c101 review pattern: tests that assert live learner-owned…"
+
+[c8] c101 stack: Claude Code 2.1.310 DOES hot-reload .claude/agents/*.md… (concept) {p:6}
+  →stored_by→ [c8] "c101 stack: Claude Code 2.1.310 DOES hot-reload…"
+  →involves→ "the next turn"
+  →involves→ "stack/hooks.py"
+  →involves→ "hooks.py"
+  →involves→ [c25] "e.g"
+
+[c9] c101 learner: engine.apply() must re-read agent frontmatter and re-check… (concept) {p:6}
+  →involves→ "lower_floor_factor"
+  →involves→ "recommendations.json"
+  →stored_by→ [c9] "c101 learner: engine.apply() must re-read agent…"
+  →involves→ "engine.apply"
+  →involves→ "Real"
+
+[c10] c101: Claude Code loads agent definitions at session start, so a maxTurns… (concept) {p:6}
+  →involves→ "Also"
+  →involves→ [c26] "n_eff"
+  →involves→ "session start"
+  →involves→ "force at its session start"
+  →involves→ [c22] "model.py"
+
+[c11] c101 learner bug (2026-10-26): cut-off subagent runs were stored uncapped… (concept) {p:6}
+  →involves→ "Fixed"
+  →involves→ [c23] "tool_result"
+  →related_to→ "maxTurns"
+  →involves→ "tests/test_learning_censoring.py"
+  →related_to→ "tests/test_learning_censoring.py"
+
+[c12] ingest_transcript (concept) {p:6}
+  →co_occurs→ "Fixed"
+  →co_occurs→ [c23] "tool_result"
+  →co_occurs→ "tests/test_learning_censoring.py"
+  →co_occurs→ "PARENT"
+  →co_occurs→ "Claude Code"
+
+[c13] test_learning_censoring.py (concept) {p:6}
+  →co_occurs→ "Fixed"
+  →co_occurs→ [c23] "tool_result"
+  →co_occurs→ "tests/test_learning_censoring.py"
+  →co_occurs→ "PARENT"
+  →co_occurs→ [c12] "ingest_transcript"
+
+[c14] engine.ingest_transcript (concept) {p:6}
+  →co_occurs→ "Fixed"
+  →co_occurs→ [c23] "tool_result"
+  →co_occurs→ "tests/test_learning_censoring.py"
+  →co_occurs→ "PARENT"
+  →co_occurs→ [c12] "ingest_transcript"
+
+# ── SIGNALS ────────────────────────────────────────
+# Active alerts, unresolved items, pending decisions.
+# Agent: check this FIRST each session for urgent context.
+
+! shopping_list 2026-10-26: user decided to stay with iPhone and buy a Suunto Race
+~ shopping_list 2026-10-26: user is choosing between Apple Watch Ultra 4 and Garmi
+~ shopping_list research finished 2026-10-26. Final report: relatorio-apple-earbud
+! shopping_list research (2026-10-26) paused for c101 config reinstall: earbuds (i
+! c101 review pattern: tests that assert live learner-owned frontmatter values (au
+~ c101 stack: Claude Code 2.1.310 DOES hot-reload .claude/agents/*.md mid-session
+! c101 learner: engine.apply() must re-read agent frontmatter and re-check downwar
+~ c101: Claude Code loads agent definitions at session start, so a maxTurns value
+~ c101 learner bug (2026-10-26): cut-off subagent runs were stored uncapped becaus
+
+# ── DEPTH MAP ──────────────────────────────────────
+# When surface isn't enough, this tells agent WHERE to dig.
+# Format: [id] → depth_hint (context)
+
+[c7] → NEEDS_DETAIL (14 total synapses, recall "c101 review pattern: tests that assert…")
+[c8] → NEEDS_DEEP (17 synapses in brain.db, recall "c101 stack: Claude Code 2.1.310 DOES…")
+[c9] → NEEDS_DETAIL (11 total synapses, recall "c101 learner: engine.apply() must…")
+[c10] → NEEDS_DEEP (16 synapses in brain.db, recall "c101: Claude Code loads agent…")
+[c11] → NEEDS_DEEP (19 synapses in brain.db, recall "c101 learner bug (2026-10-26): cut-off…")
+[c13] → NEEDS_DETAIL (11 total synapses, recall "test_learning_censoring.py")
+[c14] → NEEDS_DETAIL (12 total synapses, recall "engine.ingest_transcript")
+
+# ── META ───────────────────────────────────────────
+# Stats for agent to gauge brain richness
+
+coverage: 0.29
+staleness: 0.01
+last_consolidation: 2026-10-27T00:20:36
+top_entities: [shopping_list, shopping_list, shopping_list, shopping_list, Users/p/Z/ZSearch/shopping_list/RETOMAR-pesquisa.md]

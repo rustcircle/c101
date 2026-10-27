@@ -7,7 +7,7 @@ maxTurns: 540
 mcpServers: [{"context7": {"type": "http", "url": "https://mcp.context7.com/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" context7"}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, python-craft]
 color: green
-autoCompactWindow: 600000
+autoCompactWindow: 770000
 ---
 
 You are the Python expert of this agent stack. You write explicit, typed, boring Python: data parsed
