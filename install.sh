@@ -7,11 +7,11 @@
 #   ./install.sh --user          + agents/skills/workflows/MCP servers/hooks in every project
 #   ./install.sh --main-agent    + make `delegator` the main-thread agent for all sessions
 #   ./install.sh --adobe [APPS]  + register the Adobe app MCP servers (InDesign, Illustrator, Photoshop,
-#                                After Effects, Premiere Pro) at user scope; prints each app's one-time setup
+#                                After Effects, Premiere Pro) at user scope and run each app's one-time setup
 #   ./install.sh --dry-run ...   show what would change
 set -euo pipefail
 REPO="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export PATH="${HOME}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${PATH}"
+export PATH="${HOME}/.local/bin:${HOME}/.nix-profile/bin:/etc/profiles/per-user/${USER:-nobody}/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/opt/homebrew/bin:/usr/local/bin:${PATH}"
 
 if ! command -v uv >/dev/null 2>&1; then
   cat >&2 <<'MSG'

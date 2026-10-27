@@ -65,7 +65,8 @@ line is empty. Define each key exactly once.
 
 **stdio servers** start as `bin/mcp-run <command> [args…]`. The script:
 
-1. Prepends `$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin` to `PATH`, because the PATH that Claude Code passes
+1. Prepends `$HOME/.local/bin`, the nix profiles (`$HOME/.nix-profile/bin`, `/etc/profiles/per-user/$USER/bin`,
+   `/run/current-system/sw/bin`, `/nix/var/nix/profiles/default/bin`), `/opt/homebrew/bin` and `/usr/local/bin` to `PATH`, because the PATH that Claude Code passes
    may lack `uv`, `uvx` and Homebrew's `npx`. This is why the keyless `fetch` and `markitdown` servers also launch
    through it.
 2. Parses the env file and `export`s each key, but only if that variable is unset or empty in the inherited
@@ -288,24 +289,44 @@ the catalog, or an inline copy that is missing or differs from the catalog ([Doc
 
 ### Adobe desktop apps
 
-Five optional servers drive the Adobe apps installed on this Mac. Each app must be running, and each needs a
-one-time app-side component. Register them for every project with `./install.sh --adobe` (or
-`--adobe photoshop,indesign`), or for this repository only with `bin/stack mcp enable <name>`. The installer
-prints each server's `_setup` line and downloads nothing. All five are community projects (MIT); `mcp-run --only
-<PREFIX>` keeps every stack key out of their environment.
+Five optional servers drive the Adobe apps installed on this Mac; each app must be running. One command registers
+them for every project and does each app's one-time setup (`stack/adobe.py`):
 
-| Server | Project | App-side setup |
-|---|---|---|
-| `indesign` | github.com/nutriandrea/adobe-indesign-mcp (npm `indesign-nutria-mcp`) | load its `plugin/` "MCP Bridge" UXP panel with Adobe UXP Developer Tool (bridge on ws 8120), or set `INDESIGN_APP` in `~/.claude/stack.env` for the plugin-free macOS JXA proxy |
-| `illustrator` | github.com/ie3jp/illustrator-mcp-server (npm `illustrator-mcp-server`) | none; Illustrator 2024+ running, allow automation when macOS asks |
-| `photoshop` | github.com/mikechambers/adb-mcp | `git clone https://github.com/mikechambers/adb-mcp ~/.claude/stack-data/adobe/adb-mcp`; keep `node adb-proxy-socket/proxy.js` running (ws 3001); UXP Developer Tool > Add Plugin > `uxp/ps/manifest.json`, then Connect (again after each Photoshop restart) |
-| `after-effects` | github.com/Dakkshin/after-effects-mcp (not on npm) | clone to `~/.claude/stack-data/adobe/after-effects-mcp`, then `npm install && npm run build && npm run install-bridge`; in After Effects open Window > `mcp-bridge-auto.jsx` and tick "Auto-run commands" |
-| `premiere-pro` | github.com/leancoderkavy/premiere-pro-mcp (npm `premiere-pro-mcp`) | install its CEP panel (`artifacts/MCPBridgeCEP.zxp`), open Window > Extensions > "MCP for Adobe Premiere Pro"; FFmpeg for trim and slip; `PREMIERE_MCP_CAPABILITIES` narrows the tool set |
+```bash
+./install.sh --adobe                      # all five; or --adobe photoshop,indesign
+./install.sh --adobe --adobe-no-setup     # register only, print the manual steps instead
+./install.sh --no-adobe                   # unregister, unload and remove the LaunchAgents (checkouts stay)
+```
 
-Versions are pinned. Read a release before bumping it, because these servers run code inside your apps. Adobe's
-official "Adobe for creativity" connector (`https://adobe-creativity.adobe.io/mcp`) is a hosted cloud service that
-does not drive the desktop apps and has no After Effects. Illustrator Beta 30.4+ also ships a built-in MCP (a URL
-and key in its settings, connected with `mcp-remote`). Neither is registered by `--adobe`.
+Everything lands under `~/.claude/stack-data/adobe/`. Sources are pinned (a full commit SHA or an exact npm
+version in `stack/adobe.py` and `config/mcp.optional.json`): bump them only after reading the diff, since these run
+code inside your apps. Every step is idempotent and honours `--dry-run`, and one app's failure does not stop the
+others (the installer then exits 1). All five are community projects (MIT), and `mcp-run --only <PREFIX>` keeps
+every stack key out of their environment.
+
+| Server | Project | What `--adobe` does | Left for you (printed at the end) |
+|---|---|---|---|
+| `indesign` | nutriandrea/adobe-indesign-mcp (npm `indesign-nutria-mcp`) | npm-installs the package and runs its plugin-free JXA bridge (`bridge-proxy.mjs`, a client of the server's ws 8120 that reconnects forever) as LaunchAgent `com.c101.indesign-bridge`, with `INDESIGN_APP` set to the newest `/Applications/Adobe InDesign *` | allow `node` to control InDesign when macOS asks |
+| `illustrator` | ie3jp/illustrator-mcp-server (npm `illustrator-mcp-server`) | checks Illustrator is installed | allow automation when macOS asks |
+| `photoshop` | mikechambers/adb-mcp | fetches the pinned commit, `npm install`s its socket proxy and runs it (ws 3001) as LaunchAgent `com.c101.adb-proxy`, pre-fetches the server's uv dependencies | Settings > Plugins > Enable Developer Mode; UXP Developer Tools > Add Plugin > `uxp/ps/manifest.json` > Load, then Connect (Load again after each Photoshop restart) |
+| `after-effects` | Dakkshin/after-effects-mcp (not on npm) | fetches the pinned commit, `npm install && npm run build`, and runs its `install-bridge.js`, which copies `mcp-bridge-auto.jsx` into the newest After Effects' `Scripts/ScriptUI Panels` (it falls back to `sudo cp`, so it may ask for your password) | Settings > Scripting & Expressions > Allow Scripts to Write Files and Access Network; Window > `mcp-bridge-auto.jsx`, tick Auto-run commands |
+| `premiere-pro` | leancoderkavy/premiere-pro-mcp (npm `premiere-pro-mcp`) | npm-installs the package and installs its signed CEP panel `artifacts/MCPBridgeCEP.zxp` with Adobe's UnifiedPluginInstallerAgent | restart Premiere, then Window > Extensions > MCP for Adobe Premiere Pro; FFmpeg for trim and slip; `PREMIERE_MCP_CAPABILITIES` narrows the tool set |
+
+The LaunchAgents log to `~/.claude/stack-data/adobe/logs/` and get a `PATH` that includes the nix profiles
+(`~/.nix-profile/bin`, `/etc/profiles/per-user/$USER/bin`, `/run/current-system/sw/bin`) and Homebrew, as does
+`bin/mcp-run`. A Claude Code launched from the GUI does not read your shell profile, so without these paths `npx`,
+`node` and `uv` from nix would not be found. On nix-darwin you can declare the two agents in `launchd.user.agents`
+instead, with the same `ProgramArguments`; run `--no-adobe` first so they are not loaded twice.
+
+Doctor counts these servers separately (`9 MCP servers (+5 optional at user scope: ...)`). It warns when a
+registered server's `_requires` file (the Photoshop and After Effects checkouts) is missing, because that server
+then fails with `Connection closed`.
+
+Not automated, because it is unverified: loading the Photoshop UXP plugin without UXP Developer Tools (whether
+UPIA installs an unsigned `.ccx`), and setting the After Effects scripting preference from the command line.
+Adobe's official "Adobe for creativity" connector (`https://adobe-creativity.adobe.io/mcp`) is a hosted cloud
+service that does not drive the desktop apps and has no After Effects. Illustrator Beta 30.4+ ships a built-in MCP
+(a URL and key in its settings, connected with `mcp-remote`). `--adobe` registers neither.
 
 ## The image server
 

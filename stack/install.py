@@ -27,8 +27,13 @@ Base install (always, idempotent):
               links stay; `uv python uninstall` or deleting them removes them).
 --adobe [APPS]  register the Adobe desktop-app MCP servers (InDesign, Illustrator, Photoshop, After Effects,
               Premiere Pro; entries tagged "_group": "adobe" in config/mcp.optional.json) at user scope, so every
-              project sees them. APPS: all (default) or a comma list of server names. Prints each server's
-              one-time app-side setup (plugin / proxy). Works alone or with --user.
+              project sees them, then runs each app's one-time setup (stack/adobe.py: pinned clones and npm
+              packages, builds, LaunchAgents for the Photoshop proxy and the InDesign bridge, the After Effects
+              panel script and the Premiere CEP panel) and prints the few steps left to do inside the apps.
+              APPS: all (default) or a comma list of server names. Works alone or with --user.
+--adobe-no-setup  with --adobe: register only (print the manual setup instead of running it).
+--no-adobe    unregister the Adobe servers and unload/remove their LaunchAgents (the checkouts under
+              ~/.claude/stack-data/adobe stay).
 --mcp a,b     register any optional servers from config/mcp.optional.json at user scope.
 --dry-run     print what would change.
 """
@@ -239,15 +244,27 @@ def resolve_optional(names: List[str]) -> List[str]:
     return names
 
 
-def register_optional(ctx: Ctx, names: List[str]) -> None:
-    """Register optional servers from config/mcp.optional.json at user scope (every project)."""
+def register_optional(ctx: Ctx, names: List[str], automated: Optional[List[str]] = None) -> None:
+    """Register optional servers from config/mcp.optional.json at user scope (every project). Servers whose setup
+    the installer runs itself (`automated`) skip the printed `_setup` hint."""
     claude = shutil.which("claude")
     servers = optional_servers()
     for name in names:
         cfg = servers[name]
         _register_user_mcp(ctx, name, cfg, claude)
-        if cfg.get("_setup"):
+        if cfg.get("_setup") and name not in (automated or []):
             print("  %s setup: %s" % (name, cfg["_setup"]))
+
+
+def unregister_optional(ctx: Ctx, names: List[str]) -> None:
+    claude = shutil.which("claude")
+    for name in names:
+        if not claude:
+            print("claude CLI not on PATH; remove manually: claude mcp remove --scope user %s" % name)
+            continue
+        ctx.do("remove MCP server %s from user scope" % name,
+               lambda name=name: subprocess.run([claude, "mcp", "remove", "--scope", "user", name],
+                                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
 
 
 def _load_settings(path: str) -> dict:
@@ -352,10 +369,15 @@ def main(argv: List[str]) -> int:
     p.add_argument("--adobe", nargs="?", const="all", metavar="APPS",
                    help="register the Adobe app MCP servers at user scope: all, or a comma list of %s"
                         % ", ".join(adobe_servers()))
+    p.add_argument("--adobe-no-setup", action="store_true",
+                   help="with --adobe: only register; skip the clones, builds, LaunchAgents and panel installs")
+    p.add_argument("--no-adobe", action="store_true",
+                   help="unregister the Adobe servers and remove their LaunchAgents (checkouts stay)")
     p.add_argument("--mcp", metavar="NAMES", help="register these optional MCP servers (config/mcp.optional.json) "
                    "at user scope")
     p.add_argument("--dry-run", action="store_true")
     a = p.parse_args(argv)
+    rc = 0
     extra: List[str] = []
     if a.adobe:
         extra += adobe_servers() if a.adobe == "all" else [x.strip() for x in a.adobe.split(",") if x.strip()]
@@ -371,8 +393,18 @@ def main(argv: List[str]) -> int:
     python_env(ctx, not a.no_python_default)
     if not a.no_python_default:
         link_default_python(ctx)
+    adobe_sel = [n for n in extra if n in adobe_servers()] if a.adobe and not a.adobe_no_setup else []
     if extra:
-        register_optional(ctx, extra)
+        register_optional(ctx, extra, automated=adobe_sel)
+    if adobe_sel:
+        from . import adobe
+        if adobe.setup(ctx, adobe_sel):
+            rc = 1
+    if a.no_adobe:
+        from . import adobe
+        unregister_optional(ctx, adobe_servers())
+        if sys.platform == "darwin":
+            adobe.remove_agents(ctx)
     if a.enforce_models or a.no_enforce_models:
         enforce_models_global(ctx, a.enforce_models)
     if a.main_agent or a.no_main_agent:
@@ -380,7 +412,7 @@ def main(argv: List[str]) -> int:
     if not ctx.log:
         print("nothing to do; already installed")
     print("\nnext: fill ~/.claude/stack.env, then `bin/stack keys` and `bin/stack doctor`.")
-    return 0
+    return rc
 
 
 if __name__ == "__main__":

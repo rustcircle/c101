@@ -12,8 +12,10 @@
 set -euo pipefail
 
 STACK_ENV="${CLAUDE_STACK_ENV:-${HOME:-/nonexistent}/.claude/stack.env}"
-# uv/uvx (Python 3.14 servers) and Homebrew may be missing from the PATH Claude Code passes.
-export PATH="${HOME:-/nonexistent}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${PATH:-/usr/bin:/bin}"
+# uv/uvx (Python 3.14 servers), nix profiles and Homebrew may be missing from the PATH Claude Code passes
+# (a GUI-launched app does not read your shell profile).
+H="${HOME:-/nonexistent}"
+export PATH="$H/.local/bin:$H/.nix-profile/bin:/etc/profiles/per-user/${USER:-nobody}/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/opt/homebrew/bin:/usr/local/bin:${PATH:-/usr/bin:/bin}"
 
 ONLY=()
 while [[ "${1:-}" == "--only" ]]; do

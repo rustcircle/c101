@@ -3,10 +3,11 @@ import contextlib
 import io
 import json
 import os
+import tempfile
 import unittest
 from unittest import mock
 
-from stack import install, paths
+from stack import adobe, install, paths
 
 ADOBE = ("indesign", "illustrator", "photoshop", "after-effects", "premiere-pro")
 
@@ -44,15 +45,47 @@ class InstallFlagsTest(unittest.TestCase):
                 mock.patch.object(install, "link_default_python"), \
                 mock.patch.object(install.shutil, "which", return_value=None), \
                 mock.patch.object(install, "_register_user_mcp",
-                                  side_effect=lambda ctx, n, c, cl: calls.append(n)):
+                                  side_effect=lambda ctx, n, c, cl: calls.append(n)), \
+                mock.patch.object(adobe, "setup", return_value=[]) as setup:
             rc = install.main(list(argv) + ["--dry-run"])
+        self.setup_calls = setup.call_args_list
         return rc, calls, out.getvalue()
 
-    def test_adobe_registers_all_five(self):
+    def test_adobe_registers_all_five_and_runs_setup(self):
         rc, calls, out = self.run_main("--adobe")
         self.assertEqual(rc, 0)
         self.assertEqual(sorted(calls), sorted(ADOBE))
+        self.assertEqual(sorted(self.setup_calls[0].args[1]), sorted(ADOBE))
+        self.assertNotIn("photoshop setup:", out)  # automated, so no manual hint
+
+    def test_adobe_no_setup_prints_hints_only(self):
+        rc, calls, out = self.run_main("--adobe", "photoshop", "--adobe-no-setup")
+        self.assertEqual(calls, ["photoshop"])
+        self.assertEqual(self.setup_calls, [])
         self.assertIn("photoshop setup:", out)
+
+    def test_mcp_flag_never_runs_adobe_setup(self):
+        self.run_main("--mcp", "photoshop")
+        self.assertEqual(self.setup_calls, [])
+
+    def test_no_adobe_unregisters_and_removes_agents(self):
+        with contextlib.redirect_stdout(io.StringIO()), \
+                mock.patch.object(install, "base"), mock.patch.object(install, "python_env"), \
+                mock.patch.object(install, "link_default_python"), \
+                mock.patch.object(install, "unregister_optional") as unreg, \
+                mock.patch.object(adobe.sys, "platform", "darwin"), \
+                mock.patch.object(adobe, "remove_agents") as rm:
+            self.assertEqual(install.main(["--no-adobe", "--dry-run"]), 0)
+        self.assertEqual(sorted(unreg.call_args.args[1]), sorted(ADOBE))
+        rm.assert_called_once()
+
+    def test_setup_failure_sets_exit_code(self):
+        with contextlib.redirect_stdout(io.StringIO()), \
+                mock.patch.object(install, "base"), mock.patch.object(install, "python_env"), \
+                mock.patch.object(install, "link_default_python"), \
+                mock.patch.object(install, "_register_user_mcp"), \
+                mock.patch.object(adobe, "setup", return_value=["photoshop"]):
+            self.assertEqual(install.main(["--adobe", "photoshop", "--dry-run"]), 1)
 
     def test_adobe_subset_and_mcp_dedup(self):
         rc, calls, _ = self.run_main("--adobe", "photoshop,indesign", "--mcp", "indesign,markitdown")
@@ -72,6 +105,52 @@ class InstallFlagsTest(unittest.TestCase):
             install._register_user_mcp(install.Ctx(True), "demo", cfg, None)
         self.assertIn("claude mcp add-json --scope user demo", out.getvalue())
         self.assertNotIn("_note", out.getvalue())
+
+
+class AdobeSetupTest(unittest.TestCase):
+    def test_tool_env_puts_nix_and_brew_first_without_duplicates(self):
+        with mock.patch.dict(os.environ, {"PATH": "/usr/bin:/run/current-system/sw/bin"}):
+            parts = adobe.tool_env()["PATH"].split(os.pathsep)
+        self.assertIn(os.path.expanduser("~/.nix-profile/bin"), parts)
+        self.assertEqual(parts.count("/run/current-system/sw/bin"), 1)
+        self.assertEqual(parts[-1], "/run/current-system/sw/bin")
+
+    def test_one_failure_does_not_stop_the_others(self):
+        ran = []
+        boom = mock.Mock(side_effect=RuntimeError("no clone"))
+        fine = mock.Mock(side_effect=lambda ctx: ran.append("indesign"))
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), mock.patch.object(adobe.sys, "platform", "darwin"), \
+                mock.patch.object(adobe, "which", return_value="/x"), \
+                mock.patch.dict(adobe.SETUP, {"photoshop": boom, "indesign": fine}):
+            failed = adobe.setup(install.Ctx(True), ["photoshop", "indesign"])
+        self.assertEqual(failed, ["photoshop"])
+        self.assertEqual(ran, ["indesign"])
+        self.assertIn("photoshop setup FAILED: no clone", out.getvalue())
+        self.assertNotIn("Enable Developer Mode", out.getvalue())  # no manual steps for a failed app
+        self.assertIn("allow 'node' to control Adobe InDesign", out.getvalue())
+
+    def test_missing_tool_reported_with_nix_hint(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), mock.patch.object(adobe.sys, "platform", "darwin"), \
+                mock.patch.object(adobe, "which", return_value=None):
+            self.assertEqual(adobe.setup(install.Ctx(True), ["after-effects"]), ["after-effects"])
+        self.assertIn("missing git, node, npm on PATH (nix", out.getvalue())
+
+    def test_non_macos_skips(self):
+        with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(adobe.sys, "platform", "linux"):
+            self.assertEqual(adobe.setup(install.Ctx(True), list(ADOBE)), [])
+
+    def test_launch_agent_dry_run_writes_nothing(self):
+        with tempfile.TemporaryDirectory() as d, contextlib.redirect_stdout(io.StringIO()) as out, \
+                mock.patch.object(adobe, "AGENTS_DIR", d):
+            adobe.launch_agent(install.Ctx(True), "com.c101.test", ["/x/node", "proxy.js"], d)
+            self.assertEqual(os.listdir(d), [])
+        self.assertIn("install LaunchAgent com.c101.test", out.getvalue())
+
+    def test_pins_are_full_shas(self):
+        for url, sha in adobe.REPOS.values():
+            self.assertRegex(sha, r"^[0-9a-f]{40}$", url)
 
 
 if __name__ == "__main__":

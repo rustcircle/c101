@@ -405,34 +405,73 @@ def check_mcp(rep: Report) -> None:
                                         "session and defeats lazy loading")
     servers = [(".mcp.json:%s" % n, c) for n, c in data.get("mcpServers", {}).items()]
     servers += [("config/mcp.servers.json:%s" % n, c) for n, c in cat.items()]
+    servers += [("config/mcp.optional.json:%s" % n, c) for n, c in optional_servers().items()]
     for where, cfg in servers:
-        if cfg.get("alwaysLoad") is True:
-            rep.warn(where, "alwaysLoad: true loads every tool schema up front (tool search cannot defer it)")
-        typ = cfg.get("type", "stdio")
-        if typ in ("http", "sse", "ws", "streamable-http"):
-            if not cfg.get("url"):
-                rep.err(where, "remote server without url")
-            hh = cfg.get("headersHelper")
-            if hh and "mcp-headers" in hh and not os.access(os.path.join(paths.REPO, "bin", "mcp-headers"), os.X_OK):
-                rep.err(where, "bin/mcp-headers is not executable")
-        elif typ == "stdio":
-            if not cfg.get("command"):
-                rep.err(where, "stdio server without command")
-            if "mcp-run" in str(cfg.get("command")) and not os.access(os.path.join(paths.REPO, "bin", "mcp-run"), os.X_OK):
-                rep.err(where, "bin/mcp-run is not executable")
-            if any("mcp-run" in str(a) for a in cfg.get("args", [])) and \
-                    not os.access(os.path.join(paths.REPO, "bin", "mcp-run"), os.X_OK):
-                rep.err(where, "bin/mcp-run is not executable")
-            for a in cfg.get("args", []):
-                for rel in re.findall(r'"\$d"/(\S+)', a) if isinstance(a, str) else []:
-                    if not os.path.exists(os.path.join(paths.REPO, rel)):
-                        rep.err(where, "references missing path %s" % rel)
-                if isinstance(a, str) and "${CLAUDE_PROJECT_DIR:-.}/" in a:
-                    rel = a.split("${CLAUDE_PROJECT_DIR:-.}/", 1)[1]
-                    if rel and not os.path.exists(os.path.join(paths.REPO, rel.split()[0])):
-                        rep.err(where, "references missing path %s" % rel)
-        else:
-            rep.err(where, "unknown type %r" % typ)
+        _check_server(rep, where, cfg)
+    check_user_optional(rep)
+
+
+def _check_server(rep: Report, where: str, cfg: dict) -> None:
+    if cfg.get("alwaysLoad") is True:
+        rep.warn(where, "alwaysLoad: true loads every tool schema up front (tool search cannot defer it)")
+    typ = cfg.get("type", "stdio")
+    if typ in ("http", "sse", "ws", "streamable-http"):
+        if not cfg.get("url"):
+            rep.err(where, "remote server without url")
+        hh = cfg.get("headersHelper")
+        if hh and "mcp-headers" in hh and not os.access(os.path.join(paths.REPO, "bin", "mcp-headers"), os.X_OK):
+            rep.err(where, "bin/mcp-headers is not executable")
+    elif typ == "stdio":
+        if not cfg.get("command"):
+            rep.err(where, "stdio server without command")
+        if "mcp-run" in str(cfg.get("command")) and not os.access(os.path.join(paths.REPO, "bin", "mcp-run"), os.X_OK):
+            rep.err(where, "bin/mcp-run is not executable")
+        if any("mcp-run" in str(a) for a in cfg.get("args", [])) and \
+                not os.access(os.path.join(paths.REPO, "bin", "mcp-run"), os.X_OK):
+            rep.err(where, "bin/mcp-run is not executable")
+        for a in cfg.get("args", []):
+            for rel in re.findall(r'"\$d"/(\S+)', a) if isinstance(a, str) else []:
+                if not os.path.exists(os.path.join(paths.REPO, rel)):
+                    rep.err(where, "references missing path %s" % rel)
+            if isinstance(a, str) and "${CLAUDE_PROJECT_DIR:-.}/" in a:
+                rel = a.split("${CLAUDE_PROJECT_DIR:-.}/", 1)[1]
+                if rel and not os.path.exists(os.path.join(paths.REPO, rel.split()[0])):
+                    rep.err(where, "references missing path %s" % rel)
+    else:
+        rep.err(where, "unknown type %r" % typ)
+
+
+def optional_servers() -> dict:
+    try:
+        return read_json(os.path.join(paths.CONFIG_DIR, "mcp.optional.json")).get("mcpServers", {})
+    except (OSError, ValueError):
+        return {}
+
+
+def user_scope_servers() -> set:
+    """Names registered at user scope in ~/.claude.json (honours CLAUDE_CONFIG_DIR); empty when unreadable."""
+    base = os.environ.get("CLAUDE_CONFIG_DIR")
+    p = os.path.join(base, ".claude.json") if base else os.path.join(os.path.expanduser("~"), ".claude.json")
+    try:
+        return set(read_json(p).get("mcpServers", {}))
+    except (OSError, ValueError, AttributeError):
+        return set()
+
+
+def user_optional() -> list:
+    """Optional servers (config/mcp.optional.json) that an install registered at user scope."""
+    return sorted(set(optional_servers()) & user_scope_servers())
+
+
+def check_user_optional(rep: Report) -> None:
+    """A registered optional server whose local setup (`_requires` paths) is missing cannot start."""
+    opt = optional_servers()
+    for name in user_optional():
+        missing = [r for r in opt[name].get("_requires", []) if not os.path.exists(os.path.expanduser(r))]
+        if missing:
+            hint = "./install.sh --adobe %s" % name if opt[name].get("_group") == "adobe" else "its _setup steps"
+            rep.warn("~/.claude.json:%s" % name, "registered at user scope but %s is missing; it will fail to "
+                     "connect until you run %s" % (", ".join(missing), hint))
 
 
 def check_settings(rep: Report) -> None:

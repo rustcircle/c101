@@ -50,7 +50,7 @@ flowchart TD
     J -- yes --> K["set_main_agent()"]
 ```
 
-`install.sh` prepends `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin` to `PATH`, reads the version from
+`install.sh` prepends `~/.local/bin`, the nix profile bin directories (`~/.nix-profile/bin`, `/etc/profiles/per-user/$USER/bin`, `/run/current-system/sw/bin`, `/nix/var/nix/profiles/default/bin`), `/opt/homebrew/bin` and `/usr/local/bin` to `PATH`, reads the version from
 `.python-version` (`3.14`), runs `uv python install 3.14`, then `uv sync --project <repo> --python 3.14 --locked` (without `--locked` when there is
 no `uv.lock`), warns when `node` is missing, and finally `exec`s `stack/install.py` with all of its arguments.
 `bin/stack install [flags]` calls the same `stack.install.main` without the uv bootstrap.
@@ -64,7 +64,9 @@ no `uv.lock`), warns when `node` is missing, and finally `exec`s `stack/install.
 | `--no-enforce-models` | | remove those keys and the guard again |
 | `--main-agent` | | set `"agent": "delegator"` in `~/.claude/settings.json` (wins if both main-agent flags are given) |
 | `--no-main-agent` | | remove the `agent` key |
-| `--adobe [APPS]` | | register the Adobe desktop-app servers (`indesign`, `illustrator`, `photoshop`, `after-effects`, `premiere-pro`: the entries tagged `"_group": "adobe"` in `config/mcp.optional.json`) at user scope with the same path rewrite as `--user`, and print each one's `_setup` (app-side plugin, proxy or clone). `APPS` is `all` (default) or a comma list. Works alone or with `--user`; unknown names fail before anything is written. Nothing is downloaded: clones, plugins and panels are yours to install ([Adobe apps](mcp.md#adobe-desktop-apps)) |
+| `--adobe [APPS]` | | register the Adobe desktop-app servers (`indesign`, `illustrator`, `photoshop`, `after-effects`, `premiere-pro`: the entries tagged `"_group": "adobe"` in `config/mcp.optional.json`) at user scope with the same path rewrite as `--user`, then run each app's one-time setup from `stack/adobe.py` (pinned clones and npm packages, builds, LaunchAgents, the After Effects panel script, the Premiere CEP panel) and print what is left to do inside the apps. `APPS` is `all` (default) or a comma list. Works alone or with `--user`. Unknown names fail before anything is written, and a failed app setup makes the exit code 1 ([Adobe apps](mcp.md#adobe-desktop-apps)) |
+| `--adobe-no-setup` | `--adobe` | register only; print each server's manual `_setup` instead |
+| `--no-adobe` | | unregister the Adobe servers and unload/remove their LaunchAgents; `~/.claude/stack-data/adobe/` stays |
 | `--mcp a,b` | | the same for any servers in `config/mcp.optional.json` |
 | `--no-python-default` | | remove `UV_PYTHON` and `UV_PYTHON_PREFERENCE` from `~/.claude/settings.json` `env` and skip the `python`/`python3` links (links made earlier stay) |
 | `--dry-run` | | `install.sh` prints the uv commands instead of running them; `stack.install` prints every action prefixed `[dry-run]` and writes nothing under `~/.claude` (the final `uv run` still creates or syncs `.venv`, as uv always does) |
@@ -367,7 +369,7 @@ which `bin/mcp-run` fills when an agent's inline `image` entry starts it; operat
 `bin/mcp-run <command> [args...]` loads `$CLAUDE_STACK_ENV` (default `~/.claude/stack.env`) into the environment
 and `exec`s the command; with no arguments it prints usage and exits 64. The file is parsed, never sourced, with the
 grammar in [File format and parser rules](mcp.md#file-format-and-parser-rules); variables already set in the environment
-win unless `STACK_ENV_OVERRIDE=1`, and `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin` are prepended to
+win unless `STACK_ENV_OVERRIDE=1`, and `~/.local/bin`, the nix profile bin directories, `/opt/homebrew/bin` and `/usr/local/bin` are prepended to
 `PATH`. `stack/envfile.py` implements the same rules in Python (`tests/test_hooks.py` checks they agree).
 
 ### `bin/mcp-headers`
@@ -659,7 +661,7 @@ causes and fixes are in `.claude/skills/stack-authoring/references/doctor-errors
 | project MCP servers do not appear | not yet approved, or the server list changed | `/mcp` inside Claude Code; restart after `bin/stack mcp enable/disable` |
 | an agent's MCP tools are missing in this repo | inline servers in a project's `.claude/agents/` load only after the folder is trusted | accept the trust dialog once; catalog servers never show in `/mcp` of the main thread, only inside the agent |
 | remote server runs anonymously or returns 401 | key missing or empty (`bin/mcp-headers` sends `{}`) | `bin/stack keys`; fill `~/.claude/stack.env`; reconnect via `/mcp` |
-| `npx`/`uvx` not found when a server starts | minimal `PATH` in the MCP launch environment | servers started through `bin/mcp-run` get `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin` prepended; `playwright` and `peekaboo` call `npx` directly, so it must be on the `PATH` Claude Code starts with (or use an absolute `command`) |
+| `npx`/`uvx` not found when a server starts | minimal `PATH` in the MCP launch environment | servers started through `bin/mcp-run` get `~/.local/bin`, the nix profiles (`~/.nix-profile/bin`, `/etc/profiles/per-user/$USER/bin`, `/run/current-system/sw/bin`, `/nix/var/nix/profiles/default/bin`), `/opt/homebrew/bin` and `/usr/local/bin` prepended; `playwright` and `peekaboo` call `npx` directly, so it must be on the `PATH` Claude Code starts with (or use an absolute `command`) |
 | an `image_*` tool is missing | its operation lacks `IMAGE_<OP>_URL`, `_KEY` or `_MODEL` | call `image_ops_status` for the missing names, edit `~/.claude/stack.env`, reconnect the `image` server via `/mcp` |
 | doctor: `mcpServers references unknown server` | an agent references a disabled or optional server | `bin/stack mcp enable <name>` or `bin/stack agents set <agent> mcpServers=...` |
 | doctor: `inline definition of MCP server '...' is missing or differs` | `config/mcp.servers.json` changed, or an agent names a catalog server as a plain string | `bin/stack mcp sync` |

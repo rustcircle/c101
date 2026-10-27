@@ -155,7 +155,9 @@ def cmd_doctor(a) -> int:
             len(rep.errors), len(rep.warnings), len(paths.all_agent_files()), len(doctor.skill_names()),
             len([f for f in os.listdir(os.path.join(paths.REPO, ".claude", "workflows"))
                  if f.endswith(".js")]) if os.path.isdir(os.path.join(paths.REPO, ".claude", "workflows")) else 0,
-            len(doctor.mcp_names() | set(mcpcat.catalog()))))
+            len(doctor.mcp_names() | set(mcpcat.catalog()))), end="")
+        extra = doctor.user_optional()
+        print(" (+%d optional at user scope: %s)" % (len(extra), ", ".join(extra)) if extra else "")
     return 1 if rep.errors else 0
 
 
