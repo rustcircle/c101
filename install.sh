@@ -6,6 +6,8 @@
 #                                uv's CPython 3.14 as Claude Code's default Python (and python/python3 links)
 #   ./install.sh --user          + agents/skills/workflows/MCP servers/hooks in every project
 #   ./install.sh --main-agent    + make `delegator` the main-thread agent for all sessions
+#   ./install.sh --adobe [APPS]  + register the Adobe app MCP servers (InDesign, Illustrator, Photoshop,
+#                                After Effects, Premiere Pro) at user scope; prints each app's one-time setup
 #   ./install.sh --dry-run ...   show what would change
 set -euo pipefail
 REPO="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

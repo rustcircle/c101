@@ -91,6 +91,7 @@ Use the stack in every project, with only the packs you want:
 ./install.sh --user --packs rust,quantum,graphic-design   # core is always included
 ./install.sh --enforce-models                               # restrict every project to the tier models (alone or with --user)
 ./install.sh --main-agent                                   # make the delegator the default main thread
+./install.sh --adobe                                        # InDesign, Illustrator, Photoshop, After Effects, Premiere Pro MCP servers
 ```
 
 Requirements: macOS or Linux, [uv](https://docs.astral.sh/uv/), Node 18+ (for the Playwright MCP server),

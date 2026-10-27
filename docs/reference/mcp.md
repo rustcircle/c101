@@ -256,6 +256,11 @@ runs the pinned `neural-memory==4.62.0` (`uvx --python 3.14 --from …`, command
 | `tavily` | http `https://mcp.tavily.com/mcp/` | `TAVILY_API_KEY` (Bearer) | `tavily_search`, `tavily_extract`, `tavily_map`, `tavily_crawl`, `tavily_research` |
 | `brave-search` | stdio `mcp-run npx -y @brave/brave-search-mcp-server --transport stdio` | `BRAVE_API_KEY` | `brave_web_search`, `brave_local_search`, `brave_image_search`, `brave_news_search`, `brave_video_search`, `brave_summarizer`, `brave_place_search`, `brave_llm_context` |
 | `markitdown` | stdio `mcp-run uvx --python 3.14 markitdown-mcp` | none | `convert_to_markdown(uri)` for PDF, Office and HTML |
+| `indesign` | stdio `mcp-run --only INDESIGN_ npx -y indesign-nutria-mcp@1.6.1` | none | about 190 InDesign document, text, style and export tools ([Adobe apps](#adobe-desktop-apps)) |
+| `illustrator` | stdio `mcp-run --only ILLUSTRATOR_ npx -y illustrator-mcp-server@1.10.3` | none | about 66 Illustrator tools over ExtendScript |
+| `photoshop` | stdio `mcp-run --only PHOTOSHOP_ uv run --python 3.14 --directory ~/.claude/stack-data/adobe/adb-mcp/mcp ... mcp run ps-mcp.py` | none | Photoshop layers, selections, filters, text and export (adb-mcp) |
+| `after-effects` | stdio `mcp-run --only AFTER_EFFECTS_ node ~/.claude/stack-data/adobe/after-effects-mcp/build/index.js` | none | compositions, layers, keyframes and expressions through an ExtendScript bridge |
+| `premiere-pro` | stdio `mcp-run --only PREMIERE_MCP_ npx -y premiere-pro-mcp@1.25.0` | none | about 440 sequence, clip, effect and export tools through a CEP panel |
 
 `bin/stack mcp` (`cmd_mcp` in `stack/cli.py`) works on `.mcp.json`, `config/mcp.optional.json`,
 `config/mcp.servers.json` and `.claude/settings.json`.
@@ -280,6 +285,27 @@ executable launchers, placeholder and `"$d"/<path>` paths, transport types; erro
 empty; warnings for a server in both files and for `alwaysLoad: true`), and `check_agents` reports an agent whose
 `mcpServers` names a server that neither `.mcp.json`, the catalog nor `BUILTIN_MCP` defines, an inline entry not in
 the catalog, or an inline copy that is missing or differs from the catalog ([Doctor](installation.md#doctor)).
+
+### Adobe desktop apps
+
+Five optional servers drive the Adobe apps installed on this Mac. Each app must be running, and each needs a
+one-time app-side component. Register them for every project with `./install.sh --adobe` (or
+`--adobe photoshop,indesign`), or for this repository only with `bin/stack mcp enable <name>`. The installer
+prints each server's `_setup` line and downloads nothing. All five are community projects (MIT); `mcp-run --only
+<PREFIX>` keeps every stack key out of their environment.
+
+| Server | Project | App-side setup |
+|---|---|---|
+| `indesign` | github.com/nutriandrea/adobe-indesign-mcp (npm `indesign-nutria-mcp`) | load its `plugin/` "MCP Bridge" UXP panel with Adobe UXP Developer Tool (bridge on ws 8120), or set `INDESIGN_APP` in `~/.claude/stack.env` for the plugin-free macOS JXA proxy |
+| `illustrator` | github.com/ie3jp/illustrator-mcp-server (npm `illustrator-mcp-server`) | none; Illustrator 2024+ running, allow automation when macOS asks |
+| `photoshop` | github.com/mikechambers/adb-mcp | `git clone https://github.com/mikechambers/adb-mcp ~/.claude/stack-data/adobe/adb-mcp`; keep `node adb-proxy-socket/proxy.js` running (ws 3001); UXP Developer Tool > Add Plugin > `uxp/ps/manifest.json`, then Connect (again after each Photoshop restart) |
+| `after-effects` | github.com/Dakkshin/after-effects-mcp (not on npm) | clone to `~/.claude/stack-data/adobe/after-effects-mcp`, then `npm install && npm run build && npm run install-bridge`; in After Effects open Window > `mcp-bridge-auto.jsx` and tick "Auto-run commands" |
+| `premiere-pro` | github.com/leancoderkavy/premiere-pro-mcp (npm `premiere-pro-mcp`) | install its CEP panel (`artifacts/MCPBridgeCEP.zxp`), open Window > Extensions > "MCP for Adobe Premiere Pro"; FFmpeg for trim and slip; `PREMIERE_MCP_CAPABILITIES` narrows the tool set |
+
+Versions are pinned. Read a release before bumping it, because these servers run code inside your apps. Adobe's
+official "Adobe for creativity" connector (`https://adobe-creativity.adobe.io/mcp`) is a hosted cloud service that
+does not drive the desktop apps and has no After Effects. Illustrator Beta 30.4+ also ships a built-in MCP (a URL
+and key in its settings, connected with `mcp-remote`). Neither is registered by `--adobe`.
 
 ## The image server
 

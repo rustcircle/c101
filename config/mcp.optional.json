@@ -84,6 +84,99 @@
         "markitdown-mcp"
       ],
       "_note": "Microsoft markitdown: convert_to_markdown(uri) for PDFs/Office/HTML, run with uvx on Python 3.14"
+    },
+    "indesign": {
+      "type": "stdio",
+      "command": "${CLAUDE_PROJECT_DIR:-.}/bin/mcp-run",
+      "args": [
+        "--only",
+        "INDESIGN_",
+        "npx",
+        "-y",
+        "indesign-nutria-mcp@1.6.1"
+      ],
+      "env": {
+        "SERVER_TRANSPORT": "stdio",
+        "BRIDGE_PORT": "8120"
+      },
+      "_group": "adobe",
+      "_note": "InDesign (community, MIT: github.com/nutriandrea/adobe-indesign-mcp, npm indesign-nutria-mcp, ~190 tools). InDesign must be running; talks to a UXP bridge panel over ws://localhost:8120. Optional INDESIGN_APP in stack.env (e.g. \"Adobe InDesign 2026\") for the plugin-free macOS JXA proxy.",
+      "_setup": "load the repo's plugin/ 'MCP Bridge' UXP panel in InDesign via Adobe UXP Developer Tool (Add Plugin > manifest.json > Load), or set INDESIGN_APP in ~/.claude/stack.env to use the macOS JXA proxy"
+    },
+    "illustrator": {
+      "type": "stdio",
+      "command": "${CLAUDE_PROJECT_DIR:-.}/bin/mcp-run",
+      "args": [
+        "--only",
+        "ILLUSTRATOR_",
+        "npx",
+        "-y",
+        "illustrator-mcp-server@1.10.3"
+      ],
+      "_group": "adobe",
+      "_note": "Illustrator (community, MIT: github.com/ie3jp/illustrator-mcp-server, ~66 tools) driving Illustrator 2024+ through ExtendScript; Illustrator must be running. Adobe also ships an official MCP inside Illustrator Beta 30.4+ (settings give a URL + key, connect with mcp-remote).",
+      "_setup": "none beyond a running Illustrator 2024+; allow automation of Illustrator when macOS asks"
+    },
+    "photoshop": {
+      "type": "stdio",
+      "command": "${CLAUDE_PROJECT_DIR:-.}/bin/mcp-run",
+      "args": [
+        "--only",
+        "PHOTOSHOP_",
+        "uv",
+        "run",
+        "--python",
+        "3.14",
+        "--directory",
+        "${HOME}/.claude/stack-data/adobe/adb-mcp/mcp",
+        "--with",
+        "mcp[cli]",
+        "--with",
+        "fonttools",
+        "--with",
+        "python-socketio",
+        "--with",
+        "requests",
+        "--with",
+        "websocket-client>=1.8.0",
+        "--with",
+        "pillow>=11.2.1",
+        "--with",
+        "numpy>=2.2.6",
+        "mcp",
+        "run",
+        "ps-mcp.py"
+      ],
+      "_group": "adobe",
+      "_note": "Photoshop 26+ (community, MIT: github.com/mikechambers/adb-mcp, its most complete target). Needs the adb-mcp clone, its Node proxy (ws://localhost:3001) running, and the UXP plugin connected in Photoshop. The same repo has pr/id/ai/ae scripts if you prefer one stack for every app.",
+      "_setup": "git clone https://github.com/mikechambers/adb-mcp ~/.claude/stack-data/adobe/adb-mcp; keep `node ~/.claude/stack-data/adobe/adb-mcp/adb-proxy-socket/proxy.js` running; UXP Developer Tool > Add Plugin > uxp/ps/manifest.json > Load, then Connect in the panel (reload after each Photoshop restart)"
+    },
+    "after-effects": {
+      "type": "stdio",
+      "command": "${CLAUDE_PROJECT_DIR:-.}/bin/mcp-run",
+      "args": [
+        "--only",
+        "AFTER_EFFECTS_",
+        "node",
+        "${HOME}/.claude/stack-data/adobe/after-effects-mcp/build/index.js"
+      ],
+      "_group": "adobe",
+      "_note": "After Effects 2022+ (community, MIT: github.com/Dakkshin/after-effects-mcp). Not on npm: runs from a local clone and an ExtendScript bridge panel; After Effects must be running. Adobe's official connectors do not cover After Effects.",
+      "_setup": "git clone https://github.com/Dakkshin/after-effects-mcp ~/.claude/stack-data/adobe/after-effects-mcp && cd it && npm install && npm run build && npm run install-bridge; in After Effects open Window > mcp-bridge-auto.jsx and tick 'Auto-run commands'"
+    },
+    "premiere-pro": {
+      "type": "stdio",
+      "command": "${CLAUDE_PROJECT_DIR:-.}/bin/mcp-run",
+      "args": [
+        "--only",
+        "PREMIERE_MCP_",
+        "npx",
+        "-y",
+        "premiere-pro-mcp@1.25.0"
+      ],
+      "_group": "adobe",
+      "_note": "Premiere Pro (community, MIT: github.com/leancoderkavy/premiere-pro-mcp, npm premiere-pro-mcp, ~440 tools) over a CEP panel; Premiere must be running, Node 20.19+, FFmpeg for trim/slip. Optional PREMIERE_MCP_CAPABILITIES in stack.env (inspect,edit,export,filesystem,unsafe-script) narrows what it may do. Stdio only; its HTTP mode binds 0.0.0.0.",
+      "_setup": "install the package's CEP panel (artifacts/MCPBridgeCEP.zxp, see the repo README), then in Premiere open Window > Extensions > 'MCP for Adobe Premiere Pro'; brew install ffmpeg for trim/slip"
     }
   }
 }

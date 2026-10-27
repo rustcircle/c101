@@ -25,6 +25,11 @@ Base install (always, idempotent):
               `bin/stack packs list`. Default: all packs.
 --no-python-default  remove UV_PYTHON / UV_PYTHON_PREFERENCE from ~/.claude/settings.json (the python/python3
               links stay; `uv python uninstall` or deleting them removes them).
+--adobe [APPS]  register the Adobe desktop-app MCP servers (InDesign, Illustrator, Photoshop, After Effects,
+              Premiere Pro; entries tagged "_group": "adobe" in config/mcp.optional.json) at user scope, so every
+              project sees them. APPS: all (default) or a comma list of server names. Prints each server's
+              one-time app-side setup (plugin / proxy). Works alone or with --user.
+--mcp a,b     register any optional servers from config/mcp.optional.json at user scope.
 --dry-run     print what would change.
 """
 from __future__ import annotations
@@ -185,6 +190,22 @@ def _user_mcp_entry(cfg: dict) -> dict:
     return json.loads(s)
 
 
+def _register_user_mcp(ctx: Ctx, name: str, cfg: dict, claude: Optional[str]) -> None:
+    entry = json.dumps(_user_mcp_entry(cfg))
+    if not claude:
+        print("claude CLI not on PATH; add manually: claude mcp add-json --scope user %s '%s'" % (name, entry))
+        return
+
+    def add():
+        subprocess.run([claude, "mcp", "remove", "--scope", "user", name],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        r = subprocess.run([claude, "mcp", "add-json", "--scope", "user", name, entry],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            print("  failed to register %s: %s" % (name, (r.stderr or r.stdout).strip()))
+    ctx.do("register MCP server %s at user scope" % name, add)
+
+
 def register_mcp(ctx: Ctx) -> None:
     claude = shutil.which("claude")
     with open(os.path.join(paths.REPO, ".mcp.json"), encoding="utf-8") as fh:
@@ -196,19 +217,37 @@ def register_mcp(ctx: Ctx) -> None:
               "register for them. If an earlier install registered them at user scope, remove those so they stop "
               "connecting for every session: claude mcp remove --scope user <name>" % ", ".join(lazy))
     for name, cfg in servers.items():
-        entry = json.dumps(_user_mcp_entry(cfg))
-        if not claude:
-            print("claude CLI not on PATH; add manually: claude mcp add-json --scope user %s '%s'" % (name, entry))
-            continue
+        _register_user_mcp(ctx, name, cfg, claude)
 
-        def add(name=name, entry=entry):
-            subprocess.run([claude, "mcp", "remove", "--scope", "user", name],
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            r = subprocess.run([claude, "mcp", "add-json", "--scope", "user", name, entry],
-                               capture_output=True, text=True)
-            if r.returncode != 0:
-                print("  failed to register %s: %s" % (name, (r.stderr or r.stdout).strip()))
-        ctx.do("register MCP server %s at user scope" % name, add)
+
+def optional_servers() -> dict:
+    with open(os.path.join(paths.CONFIG_DIR, "mcp.optional.json"), encoding="utf-8") as fh:
+        return json.load(fh)["mcpServers"]
+
+
+def adobe_servers() -> List[str]:
+    """Optional servers tagged "_group": "adobe", in file order."""
+    return [n for n, c in optional_servers().items() if c.get("_group") == "adobe"]
+
+
+def resolve_optional(names: List[str]) -> List[str]:
+    """Validate optional server names; raises SystemExit naming the unknown ones."""
+    known = optional_servers()
+    bad = [n for n in names if n not in known]
+    if bad:
+        raise SystemExit("unknown optional MCP server(s): %s (see `bin/stack mcp list`)" % ", ".join(bad))
+    return names
+
+
+def register_optional(ctx: Ctx, names: List[str]) -> None:
+    """Register optional servers from config/mcp.optional.json at user scope (every project)."""
+    claude = shutil.which("claude")
+    servers = optional_servers()
+    for name in names:
+        cfg = servers[name]
+        _register_user_mcp(ctx, name, cfg, claude)
+        if cfg.get("_setup"):
+            print("  %s setup: %s" % (name, cfg["_setup"]))
 
 
 def _load_settings(path: str) -> dict:
@@ -310,8 +349,19 @@ def main(argv: List[str]) -> int:
     p.add_argument("--no-enforce-models", action="store_true")
     p.add_argument("--packs", help="comma-separated packs for --user (default: all); core is always included")
     p.add_argument("--no-python-default", action="store_true")
+    p.add_argument("--adobe", nargs="?", const="all", metavar="APPS",
+                   help="register the Adobe app MCP servers at user scope: all, or a comma list of %s"
+                        % ", ".join(adobe_servers()))
+    p.add_argument("--mcp", metavar="NAMES", help="register these optional MCP servers (config/mcp.optional.json) "
+                   "at user scope")
     p.add_argument("--dry-run", action="store_true")
     a = p.parse_args(argv)
+    extra: List[str] = []
+    if a.adobe:
+        extra += adobe_servers() if a.adobe == "all" else [x.strip() for x in a.adobe.split(",") if x.strip()]
+    if a.mcp:
+        extra += [x.strip() for x in a.mcp.split(",") if x.strip()]
+    extra = resolve_optional(list(dict.fromkeys(extra)))  # fail on unknown names before anything is written
     ctx = Ctx(a.dry_run)
     base(ctx)
     if a.user:
@@ -321,6 +371,8 @@ def main(argv: List[str]) -> int:
     python_env(ctx, not a.no_python_default)
     if not a.no_python_default:
         link_default_python(ctx)
+    if extra:
+        register_optional(ctx, extra)
     if a.enforce_models or a.no_enforce_models:
         enforce_models_global(ctx, a.enforce_models)
     if a.main_agent or a.no_main_agent:

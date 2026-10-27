@@ -28,6 +28,9 @@ Python dependencies (`pyproject.toml`, project `claude-stack` 0.1.0, `requires-p
 ./install.sh --no-enforce-models              # undo --enforce-models
 ./install.sh --main-agent                     # + delegator as the main thread of every session
 ./install.sh --no-main-agent                  # undo --main-agent
+./install.sh --adobe                          # + Adobe app MCP servers at user scope (all five)
+./install.sh --adobe photoshop,indesign       # + only these Adobe servers
+./install.sh --mcp markitdown,tavily          # + any optional servers at user scope
 ./install.sh --no-python-default              # remove the default-Python env keys from ~/.claude/settings.json
 ./install.sh --dry-run --user                 # print what would change
 ```
@@ -61,6 +64,8 @@ no `uv.lock`), warns when `node` is missing, and finally `exec`s `stack/install.
 | `--no-enforce-models` | | remove those keys and the guard again |
 | `--main-agent` | | set `"agent": "delegator"` in `~/.claude/settings.json` (wins if both main-agent flags are given) |
 | `--no-main-agent` | | remove the `agent` key |
+| `--adobe [APPS]` | | register the Adobe desktop-app servers (`indesign`, `illustrator`, `photoshop`, `after-effects`, `premiere-pro`: the entries tagged `"_group": "adobe"` in `config/mcp.optional.json`) at user scope with the same path rewrite as `--user`, and print each one's `_setup` (app-side plugin, proxy or clone). `APPS` is `all` (default) or a comma list. Works alone or with `--user`; unknown names fail before anything is written. Nothing is downloaded: clones, plugins and panels are yours to install ([Adobe apps](mcp.md#adobe-desktop-apps)) |
+| `--mcp a,b` | | the same for any servers in `config/mcp.optional.json` |
 | `--no-python-default` | | remove `UV_PYTHON` and `UV_PYTHON_PREFERENCE` from `~/.claude/settings.json` `env` and skip the `python`/`python3` links (links made earlier stay) |
 | `--dry-run` | | `install.sh` prints the uv commands instead of running them; `stack.install` prints every action prefixed `[dry-run]` and writes nothing under `~/.claude` (the final `uv run` still creates or syncs `.venv`, as uv always does) |
 
