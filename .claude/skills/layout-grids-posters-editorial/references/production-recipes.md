@@ -46,7 +46,7 @@ fall back silently; check `document.fonts.check('700 76px Inter')` in the page i
 ## 2. Render, overlay and measure with Playwright
 
 ```python
-# shot.py: uv run --python 3.14 --with playwright python -I shot.py "$PWD/post.html"
+# shot.py: uv run --python 3.13 --with playwright python -I shot.py "$PWD/post.html"
 import sys
 from playwright.sync_api import sync_playwright
 

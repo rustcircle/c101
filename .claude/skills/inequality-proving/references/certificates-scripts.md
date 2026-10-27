@@ -3,7 +3,7 @@
 Runnable with one self-contained command (no venv activation; cwd does not persist between calls):
 
 ```bash
-uv run -q --python 3.14 --with cvxpy --with sympy --with numpy --with scipy --with mpmath \
+uv run -q --python 3.13 --with cvxpy --with sympy --with numpy --with scipy --with mpmath \
   --with python-flint python -I <out_dir>/nesbitt_check.py
 ```
 

@@ -4,7 +4,7 @@ description: "Summarises a given set of sources (URLs, PDFs, local files, pasted
 model: claude-haiku-5-5
 effort: low
 maxTurns: 105
-mcpServers: [{"jina": {"type": "http", "url": "https://mcp.jina.ai/v1", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" jina"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.14 mcp-server-fetch"]}}]
+mcpServers: [{"jina": {"type": "http", "url": "https://mcp.jina.ai/v1", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" jina"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.13 mcp-server-fetch"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, source-evaluation]
 color: cyan
 disallowedTools: [Agent, Edit, NotebookEdit]

@@ -145,10 +145,10 @@ browser actions still ask for permission. `MAX_MCP_OUTPUT_TOKENS` is raised to `
 | `playwright` | stdio `npx -y @playwright/mcp@latest --headless --isolated --caps=vision,pdf,devtools --output-dir=.stack/playwright --viewport-size=1280x800` | none | `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_fill_form`, `browser_take_screenshot`, `browser_network_requests`, `browser_evaluate`, `browser_tabs`, …; `vision`: `browser_mouse_*_xy`; `pdf`: `browser_pdf_save`; `devtools`: tracing and video | `browser-operator`, `tester` |
 | `exa` | http `https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa,agent_run` | `EXA_API_KEY` (anonymous works with rate limits; `agent_run` needs the key) | the four named in `?tools=`, which replaces Exa's two-tool default | `quick-researcher`, `deep-researcher`, `web-searcher`, `fact-checker`, `paper-researcher` |
 | `jina` | http `https://mcp.jina.ai/v1` | `JINA_API_KEY` (`read_url` and `capture_screenshot_url` work without it) | `read_url`, `search_web`, `search_arxiv`, `search_ssrn`, `search_images`, `extract_pdf`, `sort_by_relevance`, `deduplicate_strings`, `capture_screenshot_url`, `guess_datetime_url`, `primer`, `search_jina_blog` | researchers, `source-summarizer`, `web-scraper` |
-| `fetch` | stdio `mcp-run uvx --python 3.14 mcp-server-fetch` (official server) | none (free) | `fetch(url, max_length=5000, start_index=0, raw=false)`: one URL to markdown, or raw text/JSON with `raw`; honours robots.txt | the eight research agents (`quick-researcher`, `deep-researcher`, `web-searcher`, `web-scraper`, `web-crawler`, `fact-checker`, `paper-researcher`, `source-summarizer`) as the first rung of the free-first ladder |
+| `fetch` | stdio `mcp-run uvx --python 3.13 mcp-server-fetch` (official server) | none (free) | `fetch(url, max_length=5000, start_index=0, raw=false)`: one URL to markdown, or raw text/JSON with `raw`; honours robots.txt | the eight research agents (`quick-researcher`, `deep-researcher`, `web-searcher`, `web-scraper`, `web-crawler`, `fact-checker`, `paper-researcher`, `source-summarizer`) as the first rung of the free-first ladder |
 | `spider` | http `https://mcp.spider.cloud/mcp` | `SPIDER_API_KEY` (required) | `spider_crawl`, `spider_scrape`, `spider_search`, `spider_links`, `spider_screenshot`, `spider_transform`, `spider_get_credits`, `spider_ai_*`, `spider_browser_*` | `web-scraper`, `web-crawler`, `deep-researcher` |
 | `context7` | http `https://mcp.context7.com/mcp` | `CONTEXT7_API_KEY` (optional, raises rate limits) | `resolve-library-id`, `query-docs` | language and domain experts, `architect` |
-| `neural-memory` | stdio `sh -c '…; exec "$d/bin/neural-memory-mcp"'` (`neural-memory==4.62.0` via `uvx --python 3.14`, command `nmem-mcp`) | none | minimal tier: `nmem_recall`, `nmem_context`, `nmem_recap` (read), `nmem_remember` (write); see [NeuralMemory](#neuralmemory) | `orchestrator`, `planner`, `architect`, `debugger`, `reviewer` |
+| `neural-memory` | stdio `sh -c '…; exec "$d/bin/neural-memory-mcp"'` (`neural-memory==4.62.0` via `uvx --python 3.13`, command `nmem-mcp`) | none | minimal tier: `nmem_recall`, `nmem_context`, `nmem_recap` (read), `nmem_remember` (write); see [NeuralMemory](#neuralmemory) | `orchestrator`, `planner`, `architect`, `debugger`, `reviewer` |
 | `desktop-sandbox` | stdio `sh -c '…; exec "$d/bin/mcp-run" --only DESKTOP_SANDBOX_ "$d"/bin/desktop-sandbox'` | none (the `--only` filter exports no keys) | see [The desktop-sandbox server](#the-desktop-sandbox-server) | `computer-operator`, `tester` |
 | `image` | stdio `sh -c '…; exec "$d/bin/mcp-run" "$d"/bin/image-router'` | `IMAGE_<OP>_KEY` per operation | see [The image server](#the-image-server) | `image-generator`, `image-editor`, `vector-artist`, `visual-reviewer`, `graphic-design-expert` |
 
@@ -165,7 +165,7 @@ is in the catalog as `desktop-sandbox`.
 
 ### The desktop-sandbox server
 
-`desktop-sandbox` (`stack_mcp/desktop_sandbox/`, Python 3.14 under uv, `mcp` 2.x) is sandboxed computer use. It
+`desktop-sandbox` (`stack_mcp/desktop_sandbox/`, Python 3.13 under uv, `mcp` 2.x) is sandboxed computer use. It
 drives a disposable Linux desktop (Xvfb, openbox, xdotool) in a container that the server starts on
 `sandbox_start` and removes on `sandbox_stop`, after the idle timeout, at the hard lifetime, and when the server
 exits. The server exits when its agent finishes, because the server is inline in the frontmatter of
@@ -217,7 +217,7 @@ the main thread (`delegator`) has no MCP tools and delegates. Tool search (defer
 ### NeuralMemory
 
 `neural-memory` is an associative memory graph that keeps cross-session project knowledge. `bin/neural-memory-mcp`
-runs the pinned `neural-memory==4.62.0` (`uvx --python 3.14 --from …`, command `nmem-mcp`, stdio) with data in
+runs the pinned `neural-memory==4.62.0` (`uvx --python 3.13 --from …`, command `nmem-mcp`, stdio) with data in
 `NEURALMEMORY_DIR`, default `${CLAUDE_STACK_DATA:-~/.claude/stack-data}/neural-memory`. It needs no key.
 
 - **No settings edits.** The package's own first start injects hooks into `~/.claude/settings.json` (unless its
@@ -256,10 +256,10 @@ runs the pinned `neural-memory==4.62.0` (`uvx --python 3.14 --from …`, command
 | `firecrawl` | http `https://mcp.firecrawl.dev/v2/mcp` | `FIRECRAWL_API_KEY` (Bearer) | without a key: `firecrawl_scrape`, `firecrawl_search`, `firecrawl_parse`; with a key, 27 tools including `firecrawl_map`, `firecrawl_crawl`, `firecrawl_agent` |
 | `tavily` | http `https://mcp.tavily.com/mcp/` | `TAVILY_API_KEY` (Bearer) | `tavily_search`, `tavily_extract`, `tavily_map`, `tavily_crawl`, `tavily_research` |
 | `brave-search` | stdio `mcp-run npx -y @brave/brave-search-mcp-server --transport stdio` | `BRAVE_API_KEY` | `brave_web_search`, `brave_local_search`, `brave_image_search`, `brave_news_search`, `brave_video_search`, `brave_summarizer`, `brave_place_search`, `brave_llm_context` |
-| `markitdown` | stdio `mcp-run uvx --python 3.14 markitdown-mcp` | none | `convert_to_markdown(uri)` for PDF, Office and HTML |
+| `markitdown` | stdio `mcp-run uvx --python 3.13 markitdown-mcp` | none | `convert_to_markdown(uri)` for PDF, Office and HTML |
 | `indesign` | stdio `mcp-run --only INDESIGN_ npx -y indesign-nutria-mcp@1.6.1` | none | about 190 InDesign document, text, style and export tools ([Adobe apps](#adobe-desktop-apps)) |
 | `illustrator` | stdio `mcp-run --only ILLUSTRATOR_ npx -y illustrator-mcp-server@1.10.3` | none | about 66 Illustrator tools over ExtendScript |
-| `photoshop` | stdio `mcp-run --only PHOTOSHOP_ uv run --python 3.14 --directory ~/.claude/stack-data/adobe/adb-mcp/mcp ... mcp run ps-mcp.py` | none | Photoshop layers, selections, filters, text and export (adb-mcp) |
+| `photoshop` | stdio `mcp-run --only PHOTOSHOP_ uv run --python 3.13 --directory ~/.claude/stack-data/adobe/adb-mcp/mcp ... mcp run ps-mcp.py` | none | Photoshop layers, selections, filters, text and export (adb-mcp) |
 | `after-effects` | stdio `mcp-run --only AFTER_EFFECTS_ node ~/.claude/stack-data/adobe/after-effects-mcp/build/index.js` | none | compositions, layers, keyframes and expressions through an ExtendScript bridge |
 | `premiere-pro` | stdio `mcp-run --only PREMIERE_MCP_ npx -y premiere-pro-mcp@1.25.0` | none | about 440 sequence, clip, effect and export tools through a CEP panel |
 
@@ -330,7 +330,7 @@ service that does not drive the desktop apps and has no After Effects. Illustrat
 
 ## The image server
 
-`image` is the stack's own MCP server, in `stack_mcp/image_router/`. It runs on Python 3.14 under uv and uses the mcp
+`image` is the stack's own MCP server, in `stack_mcp/image_router/`. It runs on Python 3.13 under uv and uses the mcp
 2.3 SDK (`MCPServer`), httpx, Pillow, resvg-py, vtracer, svglib, reportlab and pikepdf. It exists because no hosted
 image MCP covers this whole job: reading local files, normalising masks per provider, keeping unmasked pixels exact,
 and producing layered SVG/PDF. It follows four rules:
@@ -350,7 +350,7 @@ config/mcp.servers.json "image"   (inline in the image agents)
   bin/mcp-run          parse ~/.claude/stack.env into the environment, fix PATH, exec
   bin/image-router     source bin/_pyenv.sh; PYTHONPATH=$REPO; exec python -m stack_mcp.image_router
   bin/_pyenv.sh        resolve symlinks to $REPO; interpreter: $CLAUDE_STACK_PYTHON > $REPO/.venv/bin/python
-                       > uv run --quiet --project $REPO --python 3.14 python > python3 (with a warning)
+                       > uv run --quiet --project $REPO --python 3.13 python > python3 (with a warning)
   stack_mcp.image_router   MCPServer over stdio: stdout carries JSON-RPC only, diagnostics go to stderr
 ```
 
@@ -752,4 +752,4 @@ instructions.
   `config/models.json` sets `visual-reviewer` to `ADVANCED_MODEL`, `high`, 80; the `image` pack in `config/packs.json`
   includes `visual-reviewer` and the `visual-review` skill.
 
-The server's pytest suite (`uv run --python 3.14 pytest stack_mcp -q`) is described in [Testing](installation.md#testing).
+The server's pytest suite (`uv run --python 3.13 pytest stack_mcp -q`) is described in [Testing](installation.md#testing).

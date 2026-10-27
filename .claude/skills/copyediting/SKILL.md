@@ -20,8 +20,8 @@ word pairs: [confused words](references/confused-words.md).
    ```bash
    S="${CLAUDE_PROJECT_DIR:-}"; [ -d "$S/.claude/skills/manuscript-project" ] || S="$HOME/.claude/stack"
    P="$S/.claude/skills/prose-style-analysis/scripts/prose_check.py"
-   uv run --python 3.14 python "$P" mechanics <project>/chapters/003_the-letter.md --top 200 --out .stack/out/copy-editor/003-mechanics.json
-   uv run --python 3.14 python "$P" consistency <project> --out .stack/out/copy-editor/consistency.json
+   uv run --python 3.13 python "$P" mechanics <project>/chapters/003_the-letter.md --top 200 --out .stack/out/copy-editor/003-mechanics.json
+   uv run --python 3.13 python "$P" consistency <project> --out .stack/out/copy-editor/consistency.json
    ```
 
 3. Optional local spellers (never a web API): `command -v hunspell && hunspell -d en_US -l <file>`

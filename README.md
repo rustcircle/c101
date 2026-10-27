@@ -13,7 +13,7 @@
 <p align="center">
   <img alt="Claude Code" src="https://img.shields.io/badge/Claude%20Code-2.1.30x-8A63D2">
   <img alt="Agent SDK" src="https://img.shields.io/badge/Claude%20Agent%20SDK-Python-8A63D2">
-  <img alt="Python" src="https://img.shields.io/badge/Python-3.14%20(uv)-3776AB">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.13%20(uv)-3776AB">
   <img alt="Models" src="https://img.shields.io/badge/models-Opus%205.5%20%C2%B7%20Sonnet%205.5%20%C2%B7%20Haiku%205.5-1F9AA5">
 </p>
 
@@ -74,7 +74,7 @@ tooling) that turns a single session into a coordinated team:
 
 ```bash
 git clone <this repo> c101 && cd c101
-./install.sh                    # uv installs Python 3.14 + deps, makes it Claude's default; creates ~/.claude/stack.env (mode 600)
+./install.sh                    # uv installs Python 3.13 + deps, makes it Claude's default; creates ~/.claude/stack.env (mode 600)
 $EDITOR ~/.claude/stack.env     # add your keys and image endpoints (see below)
 bin/stack keys                  # which keys are set (names only)
 bin/stack doctor                # validates agents, skills, workflows, MCP, hooks, tiers, packs

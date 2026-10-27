@@ -490,8 +490,8 @@ and the SDK produce the same behaviour:
 
 `tests/test_sdk.py` makes no API calls. Both test classes are skipped when `claude_agent_sdk` cannot
 be imported, for example under a system interpreter without the uv environment. Run them with
-`uv run --python 3.14 python -m unittest tests.test_sdk`, or as part of
-`uv run --python 3.14 python -m unittest discover -s tests`.
+`uv run --python 3.13 python -m unittest tests.test_sdk`, or as part of
+`uv run --python 3.13 python -m unittest discover -s tests`.
 
 | Test | Asserts |
 |---|---|

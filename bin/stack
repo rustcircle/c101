@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Entry point for the stack's Python tooling (Python 3.14 via uv; see bin/_pyenv.sh).
+# Entry point for the stack's Python tooling (Python 3.13 via uv; see bin/_pyenv.sh).
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/_pyenv.sh"
 cd "$REPO"

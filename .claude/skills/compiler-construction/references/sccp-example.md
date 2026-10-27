@@ -1,7 +1,7 @@
 # SCCP on a toy SSA IR: implementation and golden tests
 
 Companion to section 13 of the skill. Plain Python 3.10+, no dependencies; run with
-`uv run --python 3.14 python -m pytest sccp_toy.py` (or any pytest).
+`uv run --python 3.13 python -m pytest sccp_toy.py` (or any pytest).
 
 ## IR
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run / inspect the agent stack through the Claude Agent SDK (Python 3.14 via uv).
+# Run / inspect the agent stack through the Claude Agent SDK (Python 3.13 via uv).
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/_pyenv.sh"
 PYTHONPATH="$REPO${PYTHONPATH:+:$PYTHONPATH}" exec "${PY[@]}" -m stack_sdk "$@"

@@ -4,7 +4,7 @@ description: "Answers one focused factual or technical question fast - at most 1
 model: claude-sonnet-5-5
 effort: medium
 maxTurns: 60
-mcpServers: [{"exa": {"type": "http", "url": "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa,agent_run", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" exa"}}, {"jina": {"type": "http", "url": "https://mcp.jina.ai/v1", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" jina"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.14 mcp-server-fetch"]}}]
+mcpServers: [{"exa": {"type": "http", "url": "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa,agent_run", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" exa"}}, {"jina": {"type": "http", "url": "https://mcp.jina.ai/v1", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" jina"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.13 mcp-server-fetch"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, quick-research, web-search-tools]
 color: cyan
 disallowedTools: [Edit, NotebookEdit]

@@ -80,14 +80,14 @@ that uses it (shell variables do not persist between calls):
 
 ```bash
 S="${CLAUDE_PROJECT_DIR:-}"; [ -d "$S/.claude/skills/manuscript-project" ] || S="$HOME/.claude/stack"
-uv run --python 3.14 python "$S/.claude/skills/manuscript-project/scripts/manuscript.py" validate ~/books/salt-road
+uv run --python 3.13 python "$S/.claude/skills/manuscript-project/scripts/manuscript.py" validate ~/books/salt-road
 ```
 
 `$CLAUDE_PROJECT_DIR` is the stack repo when you run inside it; from a user-scope install the
 scripts sit under `~/.claude/stack`. The script file is
 `.claude/skills/manuscript-project/scripts/manuscript.py` (stdlib only, JSON on stdout, exit 0 ok,
 1 check failed, 2 usage error, `--help` on every subcommand). Below, `M` stands for
-`uv run --python 3.14 python "$S/.claude/skills/manuscript-project/scripts/manuscript.py"`.
+`uv run --python 3.13 python "$S/.claude/skills/manuscript-project/scripts/manuscript.py"`.
 
 | Subcommand | Use | Writes files |
 |---|---|---|

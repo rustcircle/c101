@@ -43,7 +43,7 @@ as an Open doubt, do not fabricate their content).
 1. Read the `<stack-context>` header; `mkdir -p .stack/out/manuscript-reviewer`; stamp with
    `date +%Y%m%d-%H%M`. Resolve the stack root in each Bash call:
    `S="${CLAUDE_PROJECT_DIR:-}"; [ -d "$S/.claude/skills/manuscript-project" ] || S="$HOME/.claude/stack"`;
-   the CLI is `uv run --python 3.14 python "$S/.claude/skills/manuscript-project/scripts/manuscript.py"`.
+   the CLI is `uv run --python 3.13 python "$S/.claude/skills/manuscript-project/scripts/manuscript.py"`.
 2. Orient: `manuscript.py validate <project>` (errors -> Open doubt and stop unless the brief says to
    proceed), `index <project>`, `stats <project> > .stack/out/manuscript-reviewer/<stamp>-stats.json`.
    Read `manuscript.md` (front matter, logline, synopsis), `outline.md`, `style-sheet.md` voice notes,

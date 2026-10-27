@@ -80,10 +80,10 @@
       "args": [
         "uvx",
         "--python",
-        "3.14",
+        "3.13",
         "markitdown-mcp"
       ],
-      "_note": "Microsoft markitdown: convert_to_markdown(uri) for PDFs/Office/HTML, run with uvx on Python 3.14"
+      "_note": "Microsoft markitdown: convert_to_markdown(uri) for PDFs/Office/HTML, run with uvx on Python 3.13"
     },
     "indesign": {
       "type": "stdio",
@@ -126,7 +126,7 @@
         "uv",
         "run",
         "--python",
-        "3.14",
+        "3.13",
         "--directory",
         "${HOME}/.claude/stack-data/adobe/adb-mcp/mcp",
         "--with",

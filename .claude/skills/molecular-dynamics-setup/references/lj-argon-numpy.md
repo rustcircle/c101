@@ -3,7 +3,7 @@
 Reproduction of Rahman (1964) behind the worked example in `molecular-dynamics-setup` (SKILL.md section 11).
 Velocity Verlet, 864 atoms, LJ truncated and shifted at 2.5σ, Verlet neighbour list from `scipy.spatial.cKDTree` with a 0.3σ skin,
 velocity rescaling during equilibration only, NVE production, MSD on unwrapped coordinates, Green-Kubo viscosity from the off-diagonal
-pressure tensor and the Yeh-Hummer correction. Runs in about 40 s with `uv run --python 3.14 --with numpy --with scipy python md.py`.
+pressure tensor and the Yeh-Hummer correction. Runs in about 40 s with `uv run --python 3.13 --with numpy --with scipy python md.py`.
 
 Reading the output: the Green-Kubo running integral has no clean plateau in 60τ, so the worked example uses η* = 2.0 ± 0.4
 (the script prints the correction for the 2τ value, 1.875). A production estimate needs 10-100× longer runs or many replicas.

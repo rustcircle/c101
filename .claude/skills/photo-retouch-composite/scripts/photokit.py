@@ -3,7 +3,7 @@
 
 The stack venv has Pillow but not NumPy; run it in an ephemeral uv environment (a shell function,
 because zsh does not word-split a command stored in a variable):
-    pk() { uv run -q --no-project --python 3.14 --with numpy --with pillow python -I "$PK" "$@"; }
+    pk() { uv run -q --no-project --python 3.13 --with numpy --with pillow python -I "$PK" "$@"; }
     pk stats photo.png
 Images are 8-bit sRGB (PNG/JPEG/TIFF; EXIF orientation applied); masks are PNGs, white = region.
 Every command that writes prints the output path; measurements print JSON.

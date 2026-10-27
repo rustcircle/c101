@@ -4,7 +4,7 @@ description: "Runs scoped site-wide crawls with Spider - bounded by host, path r
 model: claude-haiku-5-5
 effort: medium
 maxTurns: 360
-mcpServers: [{"spider": {"type": "http", "url": "https://mcp.spider.cloud/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" spider"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.14 mcp-server-fetch"]}}]
+mcpServers: [{"spider": {"type": "http", "url": "https://mcp.spider.cloud/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" spider"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.13 mcp-server-fetch"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, scraping-crawling]
 color: cyan
 disallowedTools: [Edit, NotebookEdit]

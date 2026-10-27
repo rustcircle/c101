@@ -30,7 +30,7 @@ The call path from Claude Code to a handler:
 ```
 Claude Code ──stdin: hook JSON──▶ bin/stack hook <name>
   bin/stack        sources bin/_pyenv.sh, cd $REPO, PYTHONPATH=$REPO, exec python -m stack.cli
-  bin/_pyenv.sh    interpreter: $CLAUDE_STACK_PYTHON > $REPO/.venv/bin/python > uv run --python 3.14 > python3
+  bin/_pyenv.sh    interpreter: $CLAUDE_STACK_PYTHON > $REPO/.venv/bin/python > uv run --python 3.13 > python3
   stack/cli.py     `hook NAME` subcommand → stack.hooks.main(NAME)
   stack/hooks.py   HANDLERS[NAME](payload) → JSON on stdout, or exit code + stderr
 ```

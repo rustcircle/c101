@@ -12,7 +12,7 @@ set -euo pipefail
 NM_VERSION="4.62.0"
 export NEURALMEMORY_DIR="${NEURALMEMORY_DIR:-${CLAUDE_STACK_DATA:-${HOME:-/nonexistent}/.claude/stack-data}/neural-memory}"
 export PATH="${HOME:-/nonexistent}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${PATH:-/usr/bin:/bin}"
-nm=(uvx --quiet --python 3.14 --from "neural-memory==${NM_VERSION}")
+nm=(uvx --quiet --python 3.13 --from "neural-memory==${NM_VERSION}")
 
 if [[ ! -f "$NEURALMEMORY_DIR/config.toml" ]]; then
   "${nm[@]}" python - >&2 <<'PY'

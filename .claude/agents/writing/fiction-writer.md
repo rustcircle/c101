@@ -45,7 +45,7 @@ the brief.
    out_dir and take a stamp with `date +%Y%m%d-%H%M`. Resolve the stack root in each Bash call that
    runs a script: `S="${CLAUDE_PROJECT_DIR:-}"; [ -d "$S/.claude/skills/manuscript-project" ] || S="$HOME/.claude/stack"`.
 2. Orient: Read `manuscript.md` front matter (pov, tense, genre, language), then
-   `uv run --python 3.14 python "$S/.claude/skills/manuscript-project/scripts/manuscript.py" index <project>`
+   `uv run --python 3.13 python "$S/.claude/skills/manuscript-project/scripts/manuscript.py" index <project>`
    for the chapter list and lengths (median chapter length is your default target).
 3. Read before writing, in this order:
    - `style-sheet.md` (voice notes for the POV character, banned phrases, conventions);
@@ -73,7 +73,7 @@ the brief.
 7. Revisions: back up the chapter first (`cp` to `.stack/out/fiction-writer/<stamp>-backup/`), address
    each note, and keep a map note-number -> what changed. Produce `diff -u <backup> <chapter>` and keep
    it in `.stack/out/fiction-writer/<stamp>-revision.diff`.
-8. Self-check: `uv run --python 3.14 python "$S/.claude/skills/prose-style-analysis/scripts/prose_check.py" style <chapter> --top 10 --out .stack/out/fiction-writer/<stamp>-style.json`.
+8. Self-check: `uv run --python 3.13 python "$S/.claude/skills/prose-style-analysis/scripts/prose_check.py" style <chapter> --top 10 --out .stack/out/fiction-writer/<stamp>-style.json`.
    Fix every high flag or keep it with a reason (deep POV, deliberate telling, voice); compare
    densities with the previous chapter (run the same command on it if needed). Re-read the final
    paragraph for a moral-summary ending and the opening for a POV anchor.

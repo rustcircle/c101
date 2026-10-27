@@ -6,8 +6,8 @@ Run each block with one command (cwd does not persist between calls):
 uv run -q --python 3.13 --with numpy --with scipy --with pyamg --with scikit-learn python -I <out_dir>/recipe.py
 ```
 
-Keep `--python 3.13` here: pyamg 5.3 publishes no CPython 3.14 wheels (checked October 2026), and the explicit
-flag overrides the stack's `UV_PYTHON=3.14`.
+`--python 3.13` (also the stack's `UV_PYTHON`) matters here: pyamg 5.3 publishes no CPython 3.14 wheels
+(checked October 2026).
 
 Numbers below were measured October 2026 (NumPy 2.5, SciPy 1.18, pyamg 5.3, scikit-learn 1.9).
 

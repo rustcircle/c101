@@ -14,11 +14,11 @@ This is the contract every agent, skill and saved workflow in this repository fo
 .mcp.json                            session-wide MCP servers (empty; only `bin/stack mcp enable` adds to it)
 config/mcp.servers.json              stack MCP servers, inlined into agents by `bin/stack mcp sync` (lazy)
 bin/                                 stack CLI, MCP launchers (mcp-run, image-router), header helper
-stack/                               Python tooling (CPython 3.14 via uv; stdlib only)
+stack/                               Python tooling (CPython 3.13 via uv; stdlib only)
 stack_mcp/image_router/              MCP server for image gen/edit/RGBA/masks/vector (mcp 2.x, httpx, Pillow)
 stack_sdk/                           Claude Agent SDK runner: agents as AgentDefinitions, options, Python hooks
 config/models.json                   model tiers (ADVANCED/MEDIUM/LOW_MODEL) + initial effort/maxTurns per agent
-pyproject.toml, uv.lock, .python-version   uv project pinned to Python 3.14
+pyproject.toml, uv.lock, .python-version   uv project pinned to Python 3.13
 config/                              learning.json (Bayesian tuning), policy.json (hooks)
 docs/                                architecture, catalog, learning, MCP, depth
 .stack/                              runtime artefacts (gitignored): out/, blackboard/, images/, playwright/
@@ -168,12 +168,12 @@ when_to_use: Optional extra trigger guidance.
 
 ## 8. Python, keys and MCP
 
-- All Python (installer, `bin/stack`, hooks, our MCP servers) runs on CPython 3.14 managed by uv; the version
+- All Python (installer, `bin/stack`, hooks, our MCP servers) runs on CPython 3.13 managed by uv; the version
   lives in `.python-version` (`install.sh` reads it) and in `.claude/settings.json` `env.UV_PYTHON` (doctor checks
-  they agree). `./install.sh` runs `uv python install 3.14` and `uv sync`; launchers use `.venv/bin/python`,
-  falling back to `uv run --python 3.14`. Python-based third-party MCP servers run via `uvx --python 3.14`.
+  they agree). `./install.sh` runs `uv python install 3.13` and `uv sync`; launchers use `.venv/bin/python`,
+  falling back to `uv run --python 3.13`. Python-based third-party MCP servers run via `uvx --python 3.13`.
   Add dependencies with `uv add <pkg>` (commit `uv.lock`).
-- The installer makes that interpreter Claude Code's default everywhere: `UV_PYTHON=3.14` and
+- The installer makes that interpreter Claude Code's default everywhere: `UV_PYTHON=3.13` and
   `UV_PYTHON_PREFERENCE=only-managed` in `~/.claude/settings.json` `env`, and `python`/`python3` in uv's bin
   directory (`~/.local/bin`) linked to it. A command that needs another version passes `--python X.Y`
   (explicit flags beat `UV_PYTHON`); skill recipes whose wheels lag behind keep their own pin.

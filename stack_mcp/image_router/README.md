@@ -9,7 +9,7 @@ and model, and if the operation is not configured the tool says which env vars t
 The server also has local tools that need no model: image info, mask conversion, SVG
 optimise / inspect / render, layers (list, layerize, compose) and a layered vector PDF export.
 
-Requires Python 3.14 under uv: `mcp` 2.x, `httpx`, `Pillow`, `resvg-py`, `svglib` +
+Requires Python 3.13 under uv: `mcp` 2.x, `httpx`, `Pillow`, `resvg-py`, `svglib` +
 `reportlab`, `pikepdf` and `vtracer` (see [Libraries and licences](#libraries-and-licences)).
 
 ## Running
@@ -17,7 +17,7 @@ Requires Python 3.14 under uv: `mcp` 2.x, `httpx`, `Pillow`, `resvg-py`, `svglib
 ```bash
 bin/image-router                    # stdio JSON-RPC on stdout, logs on stderr (--mode is accepted and ignored)
 bin/image-router --check            # per-operation status (adapter, host, model; never keys), then exit
-uv run --python 3.14 python -m stack_mcp.image_router
+uv run --python 3.13 python -m stack_mcp.image_router
 ```
 
 `.mcp.json` starts the server as `image` through `bin/mcp-run bin/image-router`. Agents use the
@@ -443,7 +443,7 @@ io.py          input resolution, MIME sniffing, data URIs, output naming, saniti
 tests/         pytest: env parsing, adapter request shapes (httpx.MockTransport), fidelity, SVG/PDF, stdio e2e
 ```
 
-Run the tests with `uv run --python 3.14 pytest stack_mcp -q`.
+Run the tests with `uv run --python 3.13 pytest stack_mcp -q`.
 
 ## Knobs and limits
 

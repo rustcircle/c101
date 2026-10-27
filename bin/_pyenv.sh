@@ -1,9 +1,9 @@
 # shellcheck shell=bash
-# Sourced by bin/stack and bin/image-router: resolve the repo and a Python 3.14
+# Sourced by bin/stack and bin/image-router: resolve the repo and a Python 3.13
 # interpreter managed by uv. Sets REPO and the array PY (command prefix).
 #
 # Order: $CLAUDE_STACK_PYTHON > $REPO/.venv/bin/python (fast path; created by
-# `uv sync`) > `uv run --python 3.14` > system python3 (warns; tooling is
+# `uv sync`) > `uv run --python 3.13` > system python3 (warns; tooling is
 # 3.9-compatible so hooks never break, but MCP servers need the uv env).
 _src="${BASH_SOURCE[1]:-${BASH_SOURCE[0]}}"
 while [[ -L "$_src" ]]; do
@@ -19,7 +19,7 @@ if [[ -n "${CLAUDE_STACK_PYTHON:-}" ]]; then
 elif [[ -x "$REPO/.venv/bin/python" ]]; then
   PY=("$REPO/.venv/bin/python")
 elif command -v uv >/dev/null 2>&1; then
-  PY=(uv run --quiet --project "$REPO" --python 3.14 python)
+  PY=(uv run --quiet --project "$REPO" --python 3.13 python)
 else
   echo "stack: uv not found and $REPO/.venv missing; run ./install.sh (falling back to system python3)" >&2
   PY=(python3)

@@ -1,6 +1,6 @@
 # Markov chain and martingale code
 
-All blocks run with `uv run -q --python 3.14 --with numpy python -I <file>.py` (checked with NumPy 2.5).
+All blocks run with `uv run -q --python 3.13 --with numpy python -I <file>.py` (checked with NumPy 2.5).
 
 ## 1. Stationary distribution, reversibility, mixing time
 

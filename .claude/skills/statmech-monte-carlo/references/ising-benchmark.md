@@ -1,7 +1,7 @@
 # Ising benchmark: script and output
 
 Driver behind the worked example and the 4×4 check in `statmech-monte-carlo` (SKILL.md sections 2 and 11).
-Run with `uv run --python 3.14 --with numpy --with scipy --with numba python ising.py`; about two minutes on a 2025 laptop.
+Run with `uv run --python 3.13 --with numpy --with scipy --with numba python ising.py`; about two minutes on a 2025 laptop.
 It passes a NumPy `Generator` (PCG64 streams from `SeedSequence.spawn`) into `@numba.njit` functions.
 The Numba Metropolis sweep here is the loop form of the NumPy checkerboard in SKILL.md; it is used only for the long τ runs.
 

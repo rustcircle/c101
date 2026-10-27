@@ -5,7 +5,7 @@ finite differences and (2) measures the variance of a gradient component against
 hardware-efficient ansatz with a global and a local cost. Runs in about 2 s.
 
 ```bash
-uv run --python 3.14 --with numpy python bp_shift.py
+uv run --python 3.13 --with numpy python bp_shift.py
 ```
 
 ```python

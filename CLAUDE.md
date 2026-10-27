@@ -2,13 +2,13 @@
 
 This repository *is* a Claude Code configuration: 63 subagents (`.claude/agents/<group>/`), 234 skills
 (`.claude/skills/`: hubs, method skills and granular playbooks; see `config/packs.json`), 9 saved workflows (`.claude/workflows/`), hooks and MCP servers, plus Python tooling
-(`stack/`, `stack_mcp/`) on CPython 3.14 managed by uv.
+(`stack/`, `stack_mcp/`) on CPython 3.13 managed by uv.
 
 - Conventions for agents, skills and workflows: `docs/CONVENTIONS.md` (follow it exactly; unknown
   frontmatter keys are silently ignored by Claude Code, so typos are bugs).
 - After any change to agents/skills/workflows/MCP/hooks run `bin/stack doctor` (must report 0 errors).
-- Tests: `uv run --python 3.14 python -m unittest discover -s tests` and `uv run --python 3.14 pytest stack_mcp -q`.
-- Python: only the uv-managed CPython 3.14 (`.venv` from `uv sync`, or `uv run --python 3.14 ...`); never the
+- Tests: `uv run --python 3.13 python -m unittest discover -s tests` and `uv run --python 3.13 pytest stack_mcp -q`.
+- Python: only the uv-managed CPython 3.13 (`.venv` from `uv sync`, or `uv run --python 3.13 ...`); never the
   system `python3` (macOS ships 3.9) and never `python`/`python3` from PATH directly. Add deps with `uv add`,
   never pip; keep `stack/` stdlib-only (it runs inside hooks). The version lives in `.python-version` and in
   `.claude/settings.json` `env.UV_PYTHON` (change both; doctor checks); the installer makes it Claude's default.

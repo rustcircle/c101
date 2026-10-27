@@ -93,7 +93,7 @@ Beat tables and percentages: [structure models](references/structure-models.md).
 
 ```bash
 S="${CLAUDE_PROJECT_DIR:-}"; [ -d "$S/.claude/skills/manuscript-project" ] || S="$HOME/.claude/stack"
-uv run --python 3.14 python "$S/.claude/skills/manuscript-project/scripts/manuscript.py" stats <project> > .stack/out/manuscript-reviewer/stats.json
+uv run --python 3.13 python "$S/.claude/skills/manuscript-project/scripts/manuscript.py" stats <project> > .stack/out/manuscript-reviewer/stats.json
 jq -r '.chapters[] | [.number, .words, .dialogue_ratio, .avg_sentence_words] | @tsv' .stack/out/manuscript-reviewer/stats.json
 ```
 

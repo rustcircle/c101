@@ -4,7 +4,7 @@ Exact statevector QAOA on `networkx.random_regular_graph(3, 10, seed=7)` with br
 Goemans-Williamson (cvxpy) and simulated-annealing baselines. Runs in about 3 s on a laptop.
 
 ```bash
-uv run --python 3.14 --with numpy --with scipy --with networkx --with cvxpy python qaoa_maxcut.py
+uv run --python 3.13 --with numpy --with scipy --with networkx --with cvxpy python qaoa_maxcut.py
 ```
 
 Versions used for the recorded output: numpy 2.x, scipy, networkx 3.7, cvxpy 1.9.3 (SCS solver).

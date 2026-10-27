@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Launch the 'desktop-sandbox' MCP server (stdio) under the repo's uv environment (CPython 3.14).
+# Launch the 'desktop-sandbox' MCP server (stdio) under the repo's uv environment (CPython 3.13).
 #   bin/desktop-sandbox            serve: an MCP stdio server that waits for a client on stdin (Claude Code
 #                                  starts it through bin/mcp-run --only DESKTOP_SANDBOX_); by hand it just waits
 #   bin/desktop-sandbox --check    runtime, image and installed apps

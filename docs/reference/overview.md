@@ -4,7 +4,7 @@ Under the hood, one session becomes a hierarchical multi-agent system. The repos
 (`.claude/skills/<name>/SKILL.md`), nine saved workflows (`.claude/workflows/<name>.js`), eight hooks wired in
 `.claude/settings.json`, MCP servers (`config/mcp.servers.json`, inlined into the agents that use them, so each
 connects only while such an agent runs), and the stdlib-only Python tooling that the hooks run
-(`stack/`, CPython 3.14 via uv). No code in this repository answers a request itself. The code sets the rules
+(`stack/`, CPython 3.13 via uv). No code in this repository answers a request itself. The code sets the rules
 under which agents route, delegate, verify and report.
 
 The design rests on a few invariants. Each one is enforced by a hook, a setting or a preloaded skill:

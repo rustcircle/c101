@@ -49,7 +49,7 @@ route: caller); the brief asks for rewrites but names no chapter file.
    per character, banned phrases), the chapter's front matter (pov) and the outline section for the
    chapter if it exists (to judge where a scene is promised and summary is wrong).
 3. Metrics for the chapter:
-   `uv run --python 3.14 python "$P" style <chapter> --top 15 --out .stack/out/prose-stylist/<stamp>-NNN-style.json`,
+   `uv run --python 3.13 python "$P" style <chapter> --top 15 --out .stack/out/prose-stylist/<stamp>-NNN-style.json`,
    and `readability <chapter>` when rhythm or simplification is in scope. For a book median, run
    `style <project> --top 1 --out .stack/out/prose-stylist/<stamp>-book-style.json` once per run and
    compute per-check median densities with `jq` or `python3 -c` (do not read the JSON whole).

@@ -148,6 +148,16 @@ class AdobeSetupTest(unittest.TestCase):
             self.assertEqual(os.listdir(d), [])
         self.assertIn("install LaunchAgent com.c101.test", out.getvalue())
 
+    def test_python_pins_follow_python_version(self):
+        with open(os.path.join(paths.CONFIG_DIR, "mcp.optional.json"), encoding="utf-8") as fh:
+            servers = json.load(fh)["mcpServers"]
+        self.assertEqual(adobe.PY, paths.python_version())
+        for name, cfg in servers.items():
+            args = cfg.get("args", [])
+            for i, a in enumerate(args[:-1]):
+                if a == "--python":
+                    self.assertEqual(args[i + 1], paths.python_version(), name)
+
     def test_pins_are_full_shas(self):
         for url, sha in adobe.REPOS.values():
             self.assertRegex(sha, r"^[0-9a-f]{40}$", url)

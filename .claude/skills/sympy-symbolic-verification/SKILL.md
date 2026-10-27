@@ -19,7 +19,7 @@ Never upgrade a label. Everything below was run with SymPy 1.14.0 and mpmath 1.3
 ## 1. Isolated environment and versions
 
 ```bash
-uv run --python 3.14 --with "sympy==1.14.*" --with mpmath --with python-flint --with z3-solver python check.py
+uv run --python 3.13 --with "sympy==1.14.*" --with mpmath --with python-flint --with z3-solver python check.py
 ```
 
 - **Print versions** at the top of every script:

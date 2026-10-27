@@ -55,7 +55,7 @@
       "command": "sh",
       "args": [
         "-c",
-        "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.14 mcp-server-fetch"
+        "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.13 mcp-server-fetch"
       ]
     },
     "neural-memory": {

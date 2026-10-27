@@ -806,7 +806,7 @@ Output is one JSON line `{ok, agents, phases, logs, result | error}` with string
 clipped. `tests/test_workflows.py` runs it for every script: with no args each must return
 `{started: false}` with zero agents, and every fixture in `tests/workflow_args.json` must succeed with seeds 1, 2
 and 3, start at least one agent and return an object. Run it with
-`uv run --python 3.14 python -m unittest discover -s tests`.
+`uv run --python 3.13 python -m unittest discover -s tests`.
 
 `bin/stack doctor` adds static checks per script (`meta` first and a pure literal, no forbidden time or randomness
 calls, no imports, known `agentType` and tier `model` literals, unique names); the full list is in [Doctor](installation.md#doctor).

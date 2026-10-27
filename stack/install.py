@@ -6,7 +6,7 @@ Base install (always, idempotent):
   * ~/.claude/stack-data/      learning data directory
   * executable bits            restored on every repo script that starts with '#!' (lost by zip downloads or
                                copies; hooks and MCP servers run bin/* directly)
-  * default Python             uv's CPython from .python-version (3.14) for every Claude Code session:
+  * default Python             uv's CPython from .python-version (3.13) for every Claude Code session:
                                UV_PYTHON + UV_PYTHON_PREFERENCE=only-managed in ~/.claude/settings.json env, and
                                python/python3 in uv's bin directory (~/.local/bin) linked to it
 

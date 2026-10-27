@@ -43,7 +43,7 @@ two-group `chapter_pattern` in one directory (for example nested part folders).
 1. Read the `<stack-context>` header: note `remaining_depth`, `budget` and `out_dir`; `mkdir -p` the
    out_dir. Resolve the stack root in every Bash call that runs the script:
    `S="${CLAUDE_PROJECT_DIR:-}"; [ -d "$S/.claude/skills/manuscript-project" ] || S="$HOME/.claude/stack"`.
-   The CLI is `uv run --python 3.14 python "$S/.claude/skills/manuscript-project/scripts/manuscript.py"`
+   The CLI is `uv run --python 3.13 python "$S/.claude/skills/manuscript-project/scripts/manuscript.py"`
    (written `M` below). If the script file is missing, stop and return `Status: blocked` with the path
    you looked for.
 2. Inspect the target with `ls -la <dir>` and, if `manuscript.md` exists, Read its front matter. Never

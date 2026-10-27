@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      UV_PYTHON: "3.14"
+      UV_PYTHON: "3.13"
     steps:
       - uses: actions/checkout@v5
         with:

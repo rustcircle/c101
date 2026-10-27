@@ -180,7 +180,7 @@ Pixels at 300 ppi and bleed: [formats and furniture](references/formats-and-furn
   printed proof with two phones at the real distance.
 
 ```bash
-uv run --python 3.14 --with segno python -I -c "import segno; q = segno.make('https://ex.org/dc26', error='m', micro=False); \
+uv run --python 3.13 --with segno python -I -c "import segno; q = segno.make('https://ex.org/dc26', error='m', micro=False); \
 print(q.version, q.error, q.symbol_size(border=0)); q.save('qr.svg', scale=25 / q.symbol_size(border=0)[0], border=4, unit='mm')"
 ```
 

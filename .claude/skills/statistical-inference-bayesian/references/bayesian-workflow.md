@@ -3,7 +3,7 @@
 Checked October 2026: PyMC 6.3.2, ArviZ 1.3, NumPyro 0.22, CmdStanPy 1.3 (CmdStan itself must be
 installed separately, `cmdstanpy.install_cmdstan()`, and was not run here). One self-contained
 command per run, for example
-`uv run -q --python 3.14 --with pymc --with arviz --with matplotlib python -I <out_dir>/ab_pymc.py`.
+`uv run -q --python 3.13 --with pymc --with arviz --with matplotlib python -I <out_dir>/ab_pymc.py`.
 
 ## 1. PyMC (6.x; the model code is unchanged from 5.x)
 

@@ -16,9 +16,9 @@ author's voice. Metrics locate candidates; judgment decides. Rewrite catalog:
 ```bash
 S="${CLAUDE_PROJECT_DIR:-}"; [ -d "$S/.claude/skills/manuscript-project" ] || S="$HOME/.claude/stack"
 P="$S/.claude/skills/prose-style-analysis/scripts/prose_check.py"
-uv run --python 3.14 python "$P" style <project>/chapters/003_the-letter.md --top 15 --out .stack/out/prose-stylist/003-style.json
-uv run --python 3.14 python "$P" style <project> --checks filter_words,ai_tells,purple --top 10   # whole book via manuscript.md
-uv run --python 3.14 python "$P" readability <project>/chapters/003_the-letter.md
+uv run --python 3.13 python "$P" style <project>/chapters/003_the-letter.md --top 15 --out .stack/out/prose-stylist/003-style.json
+uv run --python 3.13 python "$P" style <project> --checks filter_words,ai_tells,purple --top 10   # whole book via manuscript.md
+uv run --python 3.13 python "$P" readability <project>/chapters/003_the-letter.md
 ```
 
 Script: `.claude/skills/prose-style-analysis/scripts/prose_check.py`, word lists in its

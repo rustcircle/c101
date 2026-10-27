@@ -147,7 +147,7 @@ asyncio.run(main())
 ```
 
 ```bash
-uv run --no-project --python 3.14 python aserver.py 8766 0.05 &     # port, mean latency (s)
+uv run --no-project --python 3.13 python aserver.py 8766 0.05 &     # port, mean latency (s)
 python3 -c "print('\n'.join(f'http://127.0.0.1:8766/item/{i}' for i in range(3000)))" > urls.txt
 PYTHONDEVMODE=1 uv run --script fetch_all.py urls.txt out.jsonl
 ```

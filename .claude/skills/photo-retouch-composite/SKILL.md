@@ -18,7 +18,7 @@ STACK="$HOME/.claude/stack"; [ -d "$STACK" ] || STACK="${CLAUDE_PROJECT_DIR:-.}"
 PY="$STACK/.venv/bin/python"; MT="$STACK/.claude/skills/image-editing/scripts/masktool.py"
 IMG="$STACK/.claude/skills/image-generation/scripts/imgcheck.py"
 PK="$STACK/.claude/skills/photo-retouch-composite/scripts/photokit.py"    # NumPy + Pillow, deterministic
-pk() { uv run -q --no-project --python 3.14 --with numpy --with pillow python -I "$PK" "$@"; }
+pk() { uv run -q --no-project --python 3.13 --with numpy --with pillow python -I "$PK" "$@"; }
 pk --help      # stats hist grain-measure swatch whitebg levels wb curve sharpen persp ramp dodge
                # transfer grain-add shadow reflect decontam
 ```

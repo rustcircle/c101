@@ -48,9 +48,9 @@ unclear and edits would be needed.
 2. Read the rules: `manuscript.md` front matter (language, pov, tense), `style-sheet.md` in full,
    `bible/glossary.md` and the names section of `bible/characters.md` (Grep when long).
 3. Candidates per chapter:
-   `uv run --python 3.14 python "$P" mechanics <chapter> --top 200 --out .stack/out/copy-editor/<stamp>-NNN-mechanics.json`.
+   `uv run --python 3.13 python "$P" mechanics <chapter> --top 200 --out .stack/out/copy-editor/<stamp>-NNN-mechanics.json`.
    Once per run when names or terms are in scope:
-   `uv run --python 3.14 python "$P" consistency <project> --out .stack/out/copy-editor/<stamp>-consistency.json`.
+   `uv run --python 3.13 python "$P" consistency <project> --out .stack/out/copy-editor/<stamp>-consistency.json`.
    Read the JSON with `jq` (counts per check, then flags for your chapter), never whole.
 4. Optional local spellers: `command -v hunspell` then `hunspell -d en_US -l <chapter> | sort | uniq -c | sort -rn | head -50`
    (filter out names and glossary terms). LanguageTool only if a localhost server answers

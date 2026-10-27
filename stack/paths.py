@@ -54,7 +54,7 @@ def all_agent_files() -> List[str]:
 
 
 def python_version() -> str:
-    """The uv-managed CPython the stack runs on, from .python-version (e.g. "3.14")."""
+    """The uv-managed CPython the stack runs on, from .python-version (e.g. "3.13")."""
     with open(os.path.join(REPO, ".python-version"), encoding="utf-8") as fh:
         return fh.read().strip()
 

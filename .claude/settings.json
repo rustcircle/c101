@@ -6,7 +6,7 @@
     "CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS": "20",
     "CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS": "16",
     "MAX_MCP_OUTPUT_TOKENS": "40000",
-    "UV_PYTHON": "3.14",
+    "UV_PYTHON": "3.13",
     "UV_PYTHON_PREFERENCE": "only-managed"
   },
   "availableModels": [

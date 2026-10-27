@@ -44,6 +44,7 @@ REPOS = {
 PACKAGES = {"indesign": ("indesign-nutria-mcp", "1.6.1"), "premiere-pro": ("premiere-pro-mcp", "1.25.0")}
 PS_DEPS = ["mcp[cli]", "fonttools", "python-socketio", "requests", "websocket-client>=1.8.0", "pillow>=11.2.1",
            "numpy>=2.2.6"]
+PY = "3.13"  # the stack's uv-managed CPython (.python-version); the photoshop entry pins the same
 LABELS = {"photoshop": "com.c101.adb-proxy", "indesign": "com.c101.indesign-bridge"}
 
 # Package managers' bin directories that a GUI-launched Claude Code may not have on PATH (nix first).
@@ -197,10 +198,10 @@ def setup_photoshop(ctx) -> None:
     if ctx.dry or not os.path.isdir(os.path.join(proxy, "node_modules")):
         ctx.do("npm install in %s" % proxy, lambda: _run(["npm", "install", "--no-fund", "--no-audit"], cwd=proxy))
     launch_agent(ctx, LABELS["photoshop"], [which("node") or "node", "proxy.js"], proxy)
-    cmd = ["uv", "run", "--quiet", "--python", "3.14", "--directory", os.path.join(d, "mcp")]
+    cmd = ["uv", "run", "--quiet", "--python", PY, "--directory", os.path.join(d, "mcp")]
     for dep in PS_DEPS:
         cmd += ["--with", dep]
-    mark = os.path.join(ROOT, ".photoshop-deps-" + REPOS["adb-mcp"][1][:12])
+    mark = os.path.join(ROOT, ".photoshop-deps-%s-py%s" % (REPOS["adb-mcp"][1][:12], PY))
     if ctx.dry or not os.path.exists(mark):
         ctx.do("pre-fetch the photoshop server's Python deps (first MCP start stays under the connect timeout)",
                lambda: (_run(cmd + ["python", "-c", "import mcp, socketio, numpy, PIL"]), open(mark, "w").close()))

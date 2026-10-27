@@ -60,7 +60,7 @@ let maxChapters = Number.isInteger(A.maxChapters) && A.maxChapters > 0 ? A.maxCh
 if (maxChapters > HARD_MAX_CHAPTERS) { note(`maxChapters ${maxChapters} capped at ${HARD_MAX_CHAPTERS}`); maxChapters = HARD_MAX_CHAPTERS }
 const wanted = Array.isArray(A.chapters) ? new Set(A.chapters.map(c => String(c).padStart(3, '0'))) : null
 
-const SCRIPT_NOTE = 'Resolve the stack root as $CLAUDE_PROJECT_DIR when it contains .claude/skills/manuscript-project, else ~/.claude/stack, and run scripts with `uv run --python 3.14 python <stack>/.claude/skills/...`.'
+const SCRIPT_NOTE = 'Resolve the stack root as $CLAUDE_PROJECT_DIR when it contains .claude/skills/manuscript-project, else ~/.claude/stack, and run scripts with `uv run --python 3.13 python <stack>/.claude/skills/...`.'
 const REPORT_ONLY = 'REPORT-ONLY RUN: do not edit, rename or create any file in the chapter folder; write only your report file.'
 
 // ---------------------------------------------------------------- Index

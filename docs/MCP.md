@@ -26,7 +26,7 @@ in a project's `.claude/agents/` load once the folder is trusted.
 | `jina` | http `mcp.jina.ai/v1` | `JINA_API_KEY` (Bearer) | researchers, summarizers | `read_url`, `search_web`, `search_arxiv`, `search_ssrn`, `extract_pdf`, `sort_by_relevance`, `deduplicate_strings`, `capture_screenshot_url` |
 | `spider` | http `mcp.spider.cloud/mcp` | `SPIDER_API_KEY` (Bearer) | web-scraper, web-crawler | `spider_crawl`, `spider_scrape`, `spider_search`, `spider_links`, `spider_screenshot`, `spider_transform`, `spider_browser_*` |
 | `context7` | http `mcp.context7.com/mcp` | `CONTEXT7_API_KEY` (optional) | language/domain experts, architect | `resolve-library-id`, `query-docs` |
-| `fetch` | stdio `sh -c … bin/mcp-run uvx --python 3.14 mcp-server-fetch` | none (free) | the eight research agents | `fetch` (url to markdown; `max_length`, `start_index`, `raw`); first choice for any known URL, before the metered readers |
+| `fetch` | stdio `sh -c … bin/mcp-run uvx --python 3.13 mcp-server-fetch` | none (free) | the eight research agents | `fetch` (url to markdown; `max_length`, `start_index`, `raw`); first choice for any known URL, before the metered readers |
 | `neural-memory` | stdio `sh -c … bin/neural-memory-mcp` (pinned `neural-memory==4.62.0`, data in `~/.claude/stack-data/neural-memory`) | — | delegator (main thread, inline); orchestrator, planner, architect, debugger, reviewer share it by name | minimal tier only: `nmem_recall`, `nmem_context`, `nmem_recap`, `nmem_remember`; the launcher initialises the data dir itself so the package never edits `~/.claude/settings.json`; memory writes by a tainted agent are denied; web-reading agents do not get it |
 | `desktop-sandbox` | stdio `sh -c … bin/mcp-run --only DESKTOP_SANDBOX_ bin/desktop-sandbox` | none (receives no keys; optional `DESKTOP_SANDBOX_*` settings) | computer-operator, tester | `sandbox_status`, `sandbox_start`, `sandbox_stop`, `screenshot`, `zoom`, `window_list`, `click`, `move`, `drag`, `scroll`, `type_text`, `key`, `wait`, `launch`, `put_file`; needs Docker or podman and the image from `bin/desktop-sandbox --build` |
 | `image` | stdio `sh -c … bin/mcp-run bin/image-router` | per-operation `IMAGE_<OP>_URL` / `_KEY` / `_MODEL` | image-generator, image-editor, vector-artist, visual-reviewer, graphic-design-expert | always: `image_ops_status`, `image_info`, `mask_convert`, `svg_optimize`, `svg_inspect`, `svg_render`, `svg_layers`, `svg_layerize`, `layers_compose`, `export_pdf`; when configured: `image_generate`, `image_generate_with_references`, `image_edit`, `image_generate_transparent`, `image_segment`, `image_remove_background`, `image_upscale`, `vector_generate`, `image_vectorize`, `svg_transform` |
@@ -41,7 +41,7 @@ with the user's quoted approval.
 
 ## Image server (`image`)
 
-`stack_mcp/image_router/` is our own MCP stdio server (Python 3.14 via uv; mcp 2.x SDK, httpx, Pillow,
+`stack_mcp/image_router/` is our own MCP stdio server (Python 3.13 via uv; mcp 2.x SDK, httpx, Pillow,
 resvg-py, pikepdf, svglib/reportlab, vtracer), launched by `bin/mcp-run bin/image-router` so keys come from
 `~/.claude/stack.env` and never from the server config. Full reference: `stack_mcp/image_router/README.md`;
 operation table: `config/image-ops.json`.
@@ -86,5 +86,5 @@ An enabled server goes into `.mcp.json` and connects for the whole session (not 
 | `flux` | official Black Forest Labs MCP (OAuth) |
 | `runware` | official Runware MCP (`RUNWARE_API_KEY`) |
 | `peekaboo` | open-source macOS computer use for headless runs |
-| `markitdown` | Microsoft markitdown (PDF/Office/HTML to markdown), Python server via `uvx --python 3.14`; free |
+| `markitdown` | Microsoft markitdown (PDF/Office/HTML to markdown), Python server via `uvx --python 3.13`; free |
 | `firecrawl`, `tavily`, `brave-search` | alternative search/scrape backends |

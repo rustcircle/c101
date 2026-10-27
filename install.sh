@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Install / update the agent stack. Requires uv (https://docs.astral.sh/uv/);
-# everything Python runs on the uv-managed CPython pinned in .python-version (3.14).
+# everything Python runs on the uv-managed CPython pinned in .python-version (3.13).
 #
 #   ./install.sh                 project scope: uv env, ~/.claude/stack link, ~/.claude/stack.env template,
-#                                uv's CPython 3.14 as Claude Code's default Python (and python/python3 links)
+#                                uv's CPython 3.13 as Claude Code's default Python (and python/python3 links)
 #   ./install.sh --user          + agents/skills/workflows/MCP servers/hooks in every project
 #   ./install.sh --main-agent    + make `delegator` the main-thread agent for all sessions
 #   ./install.sh --adobe [APPS]  + register the Adobe app MCP servers (InDesign, Illustrator, Photoshop,

@@ -9,7 +9,7 @@ where runtime state lives, how the stack is tested and validated, and what to do
 | Requirement | Why |
 |---|---|
 | macOS or Linux, `bash` | every launcher in `bin/` is a bash script; hooks use `fcntl` file locks |
-| [uv](https://docs.astral.sh/uv/) | installs CPython 3.14 and the locked dependencies (`pyproject.toml`, `uv.lock`); `install.sh` exits 1 without it |
+| [uv](https://docs.astral.sh/uv/) | installs CPython 3.13 and the locked dependencies (`pyproject.toml`, `uv.lock`); `install.sh` exits 1 without it |
 | Node 18+ (`node`, `npx`) | the Playwright MCP server (`npx @playwright/mcp@latest`), several optional servers, the workflow syntax check in `bin/stack doctor` and `tests/test_workflows.py` |
 | Claude Code CLI (`claude`) | the runtime; `--user` installs register `.mcp.json` servers (none by default) through `claude mcp add-json` |
 
@@ -39,19 +39,19 @@ Python dependencies (`pyproject.toml`, project `claude-stack` 0.1.0, `requires-p
 flowchart TD
     A["./install.sh [flags]"] --> B{"uv on PATH?"}
     B -- no --> X["exit 1 with install hints"]
-    B -- yes --> C["uv python install 3.14<br/>uv sync --project REPO --python 3.14 --locked"]
+    B -- yes --> C["uv python install 3.13<br/>uv sync --project REPO --python 3.13 --locked"]
     C --> D["exec uv run python -m stack.install [flags]"]
     D --> E["base(): ~/.claude/stack link, ~/.claude/stack.env (0600), ~/.claude/stack-data/,<br/>chmod +x on #! scripts"]
     E --> F{"--user?"}
     F -- yes --> G["link_components(--packs)"] --> H["register_mcp()"] --> I["merge_settings(--enforce-models)"]
-    F -- no --> P["python_env(): UV_PYTHON=3.14, UV_PYTHON_PREFERENCE=only-managed<br/>link_default_python(): python, python3 -> uv CPython 3.14"]
+    F -- no --> P["python_env(): UV_PYTHON=3.13, UV_PYTHON_PREFERENCE=only-managed<br/>link_default_python(): python, python3 -> uv CPython 3.13"]
     I --> P
     P --> J{"--main-agent or --no-main-agent?"}
     J -- yes --> K["set_main_agent()"]
 ```
 
 `install.sh` prepends `~/.local/bin`, the nix profile bin directories (`~/.nix-profile/bin`, `/etc/profiles/per-user/$USER/bin`, `/run/current-system/sw/bin`, `/nix/var/nix/profiles/default/bin`), `/opt/homebrew/bin` and `/usr/local/bin` to `PATH`, reads the version from
-`.python-version` (`3.14`), runs `uv python install 3.14`, then `uv sync --project <repo> --python 3.14 --locked` (without `--locked` when there is
+`.python-version` (`3.13`), runs `uv python install 3.13`, then `uv sync --project <repo> --python 3.13 --locked` (without `--locked` when there is
 no `uv.lock`), warns when `node` is missing, and finally `exec`s `stack/install.py` with all of its arguments.
 `bin/stack install [flags]` calls the same `stack.install.main` without the uv bootstrap.
 
@@ -81,12 +81,12 @@ no `uv.lock`), warns when `node` is missing, and finally `exec`s `stack/install.
 | repo scripts | `chmod +x` (where readable) on every file that starts with `#!` and is not executable | zip downloads and copies drop the bit; hooks and MCP entries run `bin/*` directly and fail with `Permission denied` |
 
 **Default Python** (every run unless `--no-python-default`, idempotent): uv's CPython from `.python-version`
-(`3.14`) becomes the interpreter of every Claude Code session, in every project:
+(`3.13`) becomes the interpreter of every Claude Code session, in every project:
 
 | Where | Action | Effect |
 |---|---|---|
-| `~/.claude/settings.json` `env` | `UV_PYTHON=3.14`, `UV_PYTHON_PREFERENCE=only-managed` (overwrites other values; backup kept) | every `uv`/`uvx` command Claude runs uses uv's CPython 3.14, never the macOS or Homebrew interpreter. It overrides project pins too: in a project whose `requires-python` excludes 3.14, pass `--python X.Y` (explicit flags win) |
-| uv's bin directory (`uv python dir --bin`, normally `~/.local/bin`) | `uv python install --default 3.14`: `python`, `python3` and `python3.14` link to uv's CPython 3.14; skipped when both already point there | plain `python3` / `python` resolve to it wherever that directory comes first on `PATH` (also in your own shell) |
+| `~/.claude/settings.json` `env` | `UV_PYTHON=3.13`, `UV_PYTHON_PREFERENCE=only-managed` (overwrites other values; backup kept) | every `uv`/`uvx` command Claude runs uses uv's CPython 3.13, never the macOS or Homebrew interpreter. It overrides project pins too: in a project whose `requires-python` excludes 3.13, pass `--python X.Y` (explicit flags win) |
+| uv's bin directory (`uv python dir --bin`, normally `~/.local/bin`) | `uv python install --default 3.13`: `python`, `python3` and `python3.13` link to uv's CPython 3.13; skipped when both already point there | plain `python3` / `python` resolve to it wherever that directory comes first on `PATH` (also in your own shell) |
 
 The project's own `.claude/settings.json` carries the same two `env` keys, so sessions in this repository get
 them even without a user-scope install.
@@ -347,7 +347,7 @@ exit 2 because the tier list is authoritative; every other argument (for example
 
 ### `bin/desktop-sandbox`
 
-Launches the `desktop-sandbox` MCP server (`python -m stack_mcp.desktop_sandbox`, Python 3.14 via `_pyenv.sh`) with
+Launches the `desktop-sandbox` MCP server (`python -m stack_mcp.desktop_sandbox`, Python 3.13 via `_pyenv.sh`) with
 the repo on `PYTHONPATH`. Agents' inline entries start it through `bin/mcp-run --only DESKTOP_SANDBOX_`, so it
 receives only `DESKTOP_SANDBOX_*` settings and no API keys. `--check` prints the container runtime, the image and
 the apps baked into the image and the limits (exit 1 when the runtime or image is missing). `--build` builds the
@@ -381,7 +381,7 @@ key names, and why the helper reads the file itself, are in
 
 ### `bin/neural-memory-mcp`
 
-Launches the `neural-memory` MCP server: pinned `neural-memory==4.62.0` through `uvx --python 3.14 --from …`,
+Launches the `neural-memory` MCP server: pinned `neural-memory==4.62.0` through `uvx --python 3.13 --from …`,
 command `nmem-mcp`, stdio, no key. `NEURALMEMORY_DIR` defaults to `${CLAUDE_STACK_DATA:-~/.claude/stack-data}/neural-memory`.
 On first use it writes the config (version check off, `minimal` tool tier) and brain itself, without the hooks
 the package would add to `~/.claude/settings.json`, and exits 1 if that setup fails; every start re-asserts
@@ -391,7 +391,7 @@ the package would add to `~/.claude/settings.json`, and exits 1 if that setup fa
 
 Sourced by `bin/stack`, `bin/stack-sdk` and `bin/image-router`. It follows symlinks to find the real repo (so
 `~/.claude/stack/bin/stack` works) and picks the interpreter in this order: `$CLAUDE_STACK_PYTHON`, then
-`<repo>/.venv/bin/python` (fast path created by `uv sync`), then `uv run --quiet --project <repo> --python 3.14
+`<repo>/.venv/bin/python` (fast path created by `uv sync`), then `uv run --quiet --project <repo> --python 3.13
 python`, then system `python3` with a warning. The fallback keeps hooks working without the uv environment; the MCP
 server and the SDK runner need it.
 
@@ -482,7 +482,7 @@ and values written at session end are what the next session loads (a running ses
 | `env.CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` | `"20"` | parallel Agent calls per message |
 | `env.CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS` | `"16"` | concurrent agents inside a saved workflow |
 | `env.MAX_MCP_OUTPUT_TOKENS` | `"40000"` | cap on a single MCP tool result |
-| `env.UV_PYTHON` | `"3.14"` | every `uv`/`uvx` command in the session uses uv's CPython 3.14; doctor errors when it differs from `.python-version` |
+| `env.UV_PYTHON` | `"3.13"` | every `uv`/`uvx` command in the session uses uv's CPython 3.13; doctor errors when it differs from `.python-version` |
 | `env.UV_PYTHON_PREFERENCE` | `"only-managed"` | uv never picks the system or Homebrew Python |
 | `availableModels` | `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5` | the only models allowed in this project |
 | `enforceAvailableModels` | `true` | Claude Code enforces the list (prefix matching here; exact matching only via managed settings: `bin/stack managed-settings`) |
@@ -512,7 +512,7 @@ Every hook command is `"$CLAUDE_PROJECT_DIR"/bin/stack hook <name>`.
 | `config/stack.env.example` | template for `~/.claude/stack.env`: web keys (`EXA_API_KEY`, `JINA_API_KEY`, `SPIDER_API_KEY`, `CONTEXT7_API_KEY`), `IMAGE_<OP>_URL/_KEY/_MODEL` blocks (optional `_API`, `_PARAMS`), optional fallback keys |
 | `config/stack.env.fal.example` | alternative template when every image operation runs on fal: each op points at `https://queue.fal.run` with a verified fal endpoint (GEN `fal-ai/nano-banana-2.1`, REF/EDIT `fal-ai/nano-banana-2.1/edit`, TRANSPARENT `fal-ai/gpt-image-1/text-to-image`, SEGMENT `fal-ai/sam-3/image`, BG_REMOVAL `fal-ai/bria/background/remove`, UPSCALE `fal-ai/topaz/upscale/image`, VECTOR `fal-ai/recraft/v4.1/text-to-vector`, TRACE `fal-ai/recraft/vectorize`), the fal key repeated per op (no shared-key fallback), SVG manipulation left to `claude`. Copy it to `~/.claude/stack.env` (mode 600) and replace `your-fal-key` |
 | `pyproject.toml` | dependencies, scripts (`stack`, `image-router`, `desktop-sandbox`, `stack-sdk`), `[tool.pytest.ini_options] testpaths = ["tests", "stack_mcp"]` |
-| `.python-version` | `3.14` |
+| `.python-version` | `3.13` |
 
 ### Environment variables
 
@@ -523,7 +523,7 @@ Every hook command is `"$CLAUDE_PROJECT_DIR"/bin/stack hook <name>`.
 | `CLAUDE_STACK_DATA` | `paths.data_dir()` | `~/.claude/stack-data` | learner and hook state |
 | `CLAUDE_PROJECTS_ROOT` | `paths.projects_root()` | `~/.claude/projects` | transcripts read by `learn ingest` and the SDK runner |
 | `CLAUDE_STACK_PYTHON` | `_pyenv.sh` | unset | interpreter for the `bin/` launchers |
-| `UV_PYTHON`, `UV_PYTHON_PREFERENCE` | uv | `3.14`, `only-managed` from settings `env` | interpreter request for every uv command Claude runs (an explicit `--python` wins) |
+| `UV_PYTHON`, `UV_PYTHON_PREFERENCE` | uv | `3.13`, `only-managed` from settings `env` | interpreter request for every uv command Claude runs (an explicit `--python` wins) |
 | `ADVANCED_MODEL`, `MEDIUM_MODEL`, `LOW_MODEL` | `stack/tiers.py` | unset | override a tier's model id everywhere the stack renders or checks models |
 | `CLAUDE_STACK_MAX_DEPTH`, then `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` | `hooks.max_depth()` | `8` | depth limit of the guard |
 | `STACK_MAIN_AGENT` | `bin/claude-stack` | `delegator` | agent to pin as the main thread |
@@ -562,7 +562,7 @@ under `~/.claude`.
 ```
 c101/
 ├── install.sh              installer: uv bootstrap, then python -m stack.install
-├── pyproject.toml uv.lock  Python 3.14 project and locked dependencies   .python-version  3.14
+├── pyproject.toml uv.lock  Python 3.13 project and locked dependencies   .python-version  3.13
 ├── CLAUDE.md               project memory: conventions, test commands, secret rules
 ├── .github/workflows/      ci.yml: doctor + both test suites on push and pull request
 ├── .mcp.json               session-wide project MCP servers (empty; stack servers are in config/mcp.servers.json)
@@ -590,15 +590,15 @@ c101/
 ## Testing
 
 ```bash
-uv run --python 3.14 python -m unittest discover -s tests   # stack tooling, hooks, learner, packs, SDK, workflows
-uv run --python 3.14 pytest stack_mcp -q                    # image MCP server
-uv run --python 3.14 pytest                                 # both (testpaths = tests, stack_mcp)
+uv run --python 3.13 python -m unittest discover -s tests   # stack tooling, hooks, learner, packs, SDK, workflows
+uv run --python 3.13 pytest stack_mcp -q                    # image MCP server
+uv run --python 3.13 pytest                                 # both (testpaths = tests, stack_mcp)
 bin/stack doctor                                            # must report 0 errors
 bin/stack-sdk check                                         # SDK options for both placements, no API call
 ```
 
 CI (`.github/workflows/ci.yml`) runs the doctor and both suites on every push to `main` and every pull
-request, on Python 3.14 and Node 22, with no secrets.
+request, on Python 3.13 and Node 22, with no secrets.
 
 Every test module imports `tests/stackenv.py` first, which removes environment variables that would leak a
 developer shell's or a container's settings into the hooks under test: every `CLAUDE_STACK_*`, the tier
@@ -652,7 +652,7 @@ causes and fixes are in `.claude/skills/stack-authoring/references/doctor-errors
 | `uv sync --locked` fails | `pyproject.toml` changed without relocking | `uv lock`, then rerun the installer |
 | `stack: uv not found and <repo>/.venv missing ...` | launchers fell back to system `python3` | run `./install.sh`; hooks keep working meanwhile, the image server and SDK runner do not |
 | hooks fail with `Permission denied`, or doctor: `starts with #! but is not executable` | executable bits lost (zip download, copy, an editor that rewrites files) | rerun `./install.sh` (restores them), then commit the modes with `git update-index --chmod=+x <file>` |
-| `The requested interpreter resolved to Python 3.14 ..., which is incompatible with the project's Python requirement` | `UV_PYTHON=3.14` from the default-Python step overrides that project's pin | pass the project's version explicitly (`uv run --python 3.12 ...`), or `./install.sh --no-python-default` |
+| `The requested interpreter resolved to Python 3.13 ..., which is incompatible with the project's Python requirement` | `UV_PYTHON=3.13` from the default-Python step overrides that project's pin | pass the project's version explicitly (`uv run --python 3.12 ...`), or `./install.sh --no-python-default` |
 | `skip <path>: exists and is not a symlink` | a real file or directory occupies a link target | move it away and rerun |
 | `claude CLI not on PATH; add manually: ...` or `failed to register <name>` | `claude` missing, or `claude mcp add-json` rejected the entry | install the CLI, or run the printed command yourself |
 | user-scope servers or hooks fail after moving the repo | `~/.claude/stack` points at the old location | rerun `./install.sh` (relinks) |
