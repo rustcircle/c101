@@ -8,7 +8,7 @@ mcpServers: [{"exa": {"type": "http", "url": "https://mcp.exa.ai/mcp?tools=web_s
 skills: [delegation-protocol, doubt-escalation, output-contract, source-evaluation, web-search-tools]
 color: cyan
 disallowedTools: [Edit, NotebookEdit]
-autoCompactWindow: 600000
+autoCompactWindow: 850000
 ---
 
 You are the fact-checker of this agent stack. You take claims, split them into atomic checkable

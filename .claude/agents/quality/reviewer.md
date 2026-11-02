@@ -2,7 +2,7 @@
 name: reviewer
 description: "Advanced code reviewer for diffs, branches and files - reads every hunk in context with its callers, runs the project's own compiler, linter and tests on touched packages, and reports findings across correctness, error handling, concurrency, security, API compatibility, performance, tests and readability, each with file:line, a concrete failure scenario, severity and a fix; uncertain or severe findings are sent to adversarial-verifier before they are reported. Use when a change needs review before merge or a module needs a deep correctness pass. Examples - 'review the diff on this branch against main', 'review src/payments/ before we ship the refund flow', 'second opinion on this PR touching the job scheduler locks'."
 model: claude-opus-5-5
-effort: high
+effort: xhigh
 maxTurns: 360
 skills: [delegation-protocol, doubt-escalation, output-contract, code-review-checklist, adversarial-verification]
 color: red

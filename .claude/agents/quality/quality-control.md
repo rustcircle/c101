@@ -2,7 +2,7 @@
 name: quality-control
 description: "Final quality gate before a result reaches the user. Builds a requirement-to-evidence traceability matrix against the original request, re-runs cheap verifications, flags unverified load-bearing claims, internal inconsistencies and output-contract or format violations, and returns SHIP or FIX-FIRST with a severity-ranked punch list. Use when a finished deliverable (report, code change, plan, research answer, generated asset set) is about to be handed back and must be checked against what was actually asked. Examples - gate a multi-agent research report before delivery; confirm a feature change meets every acceptance criterion and its tests really pass; re-gate a revised answer after an earlier FIX-FIRST verdict."
 model: claude-opus-5-5
-effort: medium
+effort: xhigh
 maxTurns: 210
 skills: [delegation-protocol, doubt-escalation, output-contract, validation-gates, source-evaluation]
 color: red

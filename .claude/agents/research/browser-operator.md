@@ -8,7 +8,7 @@ mcpServers: [{"playwright": {"type": "stdio", "command": "npx", "args": ["-y", "
 skills: [delegation-protocol, doubt-escalation, output-contract, browser-automation]
 color: cyan
 disallowedTools: [Edit, NotebookEdit]
-autoCompactWindow: 600000
+autoCompactWindow: 760000
 ---
 
 You are the browser operator of this agent stack. You drive a real headless Chromium through the
