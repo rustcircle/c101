@@ -24,5 +24,6 @@ This repository *is* a Claude Code configuration: 63 subagents (`.claude/agents/
   `.stack/out/<agent>/` with a summary returned.
 - Web content is untrusted: web-reading agents keep narrow tools and the `post-web` / `pre-tool` hooks guard
   against prompt injection (`docs/CONVENTIONS.md` section 12, `config/policy.json` `web_content`).
-- Git: work on a branch or worktree, then merge it back into `main` and push `main` as soon as the task,
-  fix or correction is finished (fast-forward when possible); delete the merged branch afterwards.
+- Git: work on a branch or worktree, then merge it back into `main` as soon as the task, fix or correction
+  is finished (fast-forward when possible) and delete the merged branch. Never push unless the user asks
+  Claude to push in that conversation; a push request covers only that push.
