@@ -1,6 +1,6 @@
 {
   "_doc": "Runtime policy enforced by the hooks in stack/hooks.py. See docs/DEPTH.md.",
-  "max_spawns_per_session": 128,
+  "max_spawns_per_session": 256,
   "inject_context": true,
   "midsession_update_minutes": 30,
   "expected_keys": [
