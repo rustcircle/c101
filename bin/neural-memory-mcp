@@ -11,6 +11,10 @@ set -euo pipefail
 
 NM_VERSION="4.62.0"
 export NEURALMEMORY_DIR="${NEURALMEMORY_DIR:-${CLAUDE_STACK_DATA:-${HOME:-/nonexistent}/.claude/stack-data}/neural-memory}"
+# nmem-mcp runs its aiosqlite probe from inside a running event loop, where asyncio.run() fails; the package
+# then skips the probe anyway but leaks the coroutine ("coroutine '_probe_coro' was never awaited" on stderr).
+# Use the package's own bypass: same behaviour, no warning.
+export NMEM_SKIP_AIOSQLITE_PROBE=1
 export PATH="${HOME:-/nonexistent}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${PATH:-/usr/bin:/bin}"
 nm=(uvx --quiet --python 3.13 --from "neural-memory==${NM_VERSION}")
 
