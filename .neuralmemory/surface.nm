@@ -5,9 +5,9 @@
 # ═══════════════════════════════════════════════════
 ---
 brain: default
-updated: 2026-10-27T00:20:36
-neurons: 104
-synapses: 479
+updated: 2026-11-04T14:09:57
+neurons: 633
+synapses: 2545
 token_budget: 1200
 depth_available: [surface, detail, deep]
 ---
@@ -17,99 +17,85 @@ depth_available: [surface, detail, deep]
 # Agent: scan this section to understand the knowledge landscape.
 # Format: [id] content (type) {p:N} →edge→ [target_id_or_text]
 
-[c6] pesquisa.md (concept) {p:6}
-  →co_occurs→ [c3] "shopping_list"
-  →co_occurs→ "RETOMAR"
-  →co_occurs→ "Resume"
-  →co_occurs→ "Users"
-  →co_occurs→ "AFib"
+[c4] z-work-tracker: check_shared in validate.rs is stricter than input validators,… (concept) {p:6}
+  →related_to→ [c26] "MSIX"
+  →stored_by→ [c4] "z-work-tracker: check_shared in validate.rs is stricter…"
+  →related_to→ "Store MSIX"
+  →involves→ "entry"
+  →involves→ "validate.rs"
 
-[c7] c101 review pattern: tests that assert live learner-owned frontmatter values… (concept) {p:6}
-  →co_occurs→ [c8] "c101 stack: Claude Code 2.1.310 DOES hot-reload…"
-  →co_occurs→ [c8] "c101 stack: Claude Code 2.1.310 DOES hot-reload…"
-  →involves→ "apply_on"
-  →involves→ "Assert"
-  →stored_by→ [c7] "c101 review pattern: tests that assert live learner-owned…"
+[c5] zWorkTracker: owner will submit to the Microsoft Store only after 1.3.4… (concept) {p:6}
+  →involves→ "as a milestone but not submitted"
+  →stored_by→ [c5] "zWorkTracker: owner will submit to the Microsoft Store…"
+  →related_to→ "z-work-tracker: in src/features/projects/ProjectsTab.tsx a…"
+  →co_occurs→ "z-work-tracker: in src/features/projects/ProjectsTab.tsx a…"
+  →related_to→ "owner submit"
 
-[c8] c101 stack: Claude Code 2.1.310 DOES hot-reload .claude/agents/*.md… (concept) {p:6}
-  →stored_by→ [c8] "c101 stack: Claude Code 2.1.310 DOES hot-reload…"
-  →involves→ "the next turn"
-  →involves→ "stack/hooks.py"
-  →involves→ "hooks.py"
-  →involves→ [c25] "e.g"
+[c6] z-work-tracker workflow: to run repro tests without touching the tree, copy… (concept) {p:6}
+  →involves→ [c24] "types.ts"
+  →stored_by→ [c6] "z-work-tracker workflow: to run repro tests without…"
+  →related_to→ "z-work-tracker: in src/features/projects/ProjectsTab.tsx a…"
+  →co_occurs→ "z-work-tracker: in src/features/projects/ProjectsTab.tsx a…"
+  →involves→ "APFS"
 
-[c9] c101 learner: engine.apply() must re-read agent frontmatter and re-check… (concept) {p:6}
-  →involves→ "lower_floor_factor"
-  →involves→ "recommendations.json"
-  →stored_by→ [c9] "c101 learner: engine.apply() must re-read agent…"
-  →involves→ "engine.apply"
-  →involves→ "Real"
+[c7] z-work-tracker review false positive to avoid: SyncSchedule::cycle_done… (concept) {p:6}
+  →stored_by→ [c7] "z-work-tracker review false positive to avoid:…"
+  →co_occurs→ [c4] "z-work-tracker: check_shared in validate.rs is stricter…"
+  →co_occurs→ [c4] "z-work-tracker: check_shared in validate.rs is stricter…"
+  →related_to→ "ClockBanner"
+  →involves→ "Also JS Date"
 
-[c10] c101: Claude Code loads agent definitions at session start, so a maxTurns… (concept) {p:6}
-  →involves→ "Also"
-  →involves→ [c26] "n_eff"
-  →involves→ "session start"
-  →involves→ "force at its session start"
-  →involves→ [c22] "model.py"
+[c8] the (concept) {p:6}
+  →co_occurs→ [c18] "src/features/tasks/details/DeleteTask.tsx"
+  →co_occurs→ "Esc"
+  →co_occurs→ "one dialog must first check that dialog is"
+  →co_occurs→ "DOM"
+  →co_occurs→ "Modal"
 
-[c11] c101 learner bug (2026-10-26): cut-off subagent runs were stored uncapped… (concept) {p:6}
-  →involves→ "Fixed"
-  →involves→ [c23] "tool_result"
-  →related_to→ "maxTurns"
-  →involves→ "tests/test_learning_censoring.py"
-  →related_to→ "tests/test_learning_censoring.py"
+[c2] z-work-tracker: makemsix pack 1.7.243 (--pack build) enforces only the… (concept) {p:7}
+  →stored_by→ [c2] "z-work-tracker: makemsix pack 1.7.243 (--pack build)…"
+  →involves→ "Executable"
+  →related_to→ [c26] "MSIX"
+  →related_to→ "ClockBanner"
+  →related_to→ "work tracker"
 
-[c12] ingest_transcript (concept) {p:6}
-  →co_occurs→ "Fixed"
-  →co_occurs→ [c23] "tool_result"
-  →co_occurs→ "tests/test_learning_censoring.py"
-  →co_occurs→ "PARENT"
-  →co_occurs→ "Claude Code"
-
-[c13] test_learning_censoring.py (concept) {p:6}
-  →co_occurs→ "Fixed"
-  →co_occurs→ [c23] "tool_result"
-  →co_occurs→ "tests/test_learning_censoring.py"
-  →co_occurs→ "PARENT"
-  →co_occurs→ [c12] "ingest_transcript"
-
-[c14] engine.ingest_transcript (concept) {p:6}
-  →co_occurs→ "Fixed"
-  →co_occurs→ [c23] "tool_result"
-  →co_occurs→ "tests/test_learning_censoring.py"
-  →co_occurs→ "PARENT"
-  →co_occurs→ [c12] "ingest_transcript"
+[c1] zWorkTracker: letting a time-bearing task disappear (delete_task,… (concept) {p:8}
+  →stored_by→ [c1] "zWorkTracker: letting a time-bearing task disappear…"
+  →involves→ [c23] "SummariesCard"
+  →involves→ "Check"
+  →related_to→ "SQLite"
+  →involves→ "Task"
 
 # ── SIGNALS ────────────────────────────────────────
 # Active alerts, unresolved items, pending decisions.
 # Agent: check this FIRST each session for urgent context.
 
-! shopping_list 2026-10-26: user decided to stay with iPhone and buy a Suunto Race
-~ shopping_list 2026-10-26: user is choosing between Apple Watch Ultra 4 and Garmi
-~ shopping_list research finished 2026-10-26. Final report: relatorio-apple-earbud
-! shopping_list research (2026-10-26) paused for c101 config reinstall: earbuds (i
-! c101 review pattern: tests that assert live learner-owned frontmatter values (au
-~ c101 stack: Claude Code 2.1.310 DOES hot-reload .claude/agents/*.md mid-session
-! c101 learner: engine.apply() must re-read agent frontmatter and re-check downwar
-~ c101: Claude Code loads agent definitions at session start, so a maxTurns value
-~ c101 learner bug (2026-10-26): cut-off subagent runs were stored uncapped becaus
+! zWorkTracker 2.0 decision (owner, 2026-11-04): custom title bar in M3 — no nativ
+! zWorkTracker 2.0 visual decisions (owner, 2026-11-04): Share combination slices
+! zWorkTracker 2.0 review pattern: AppState.now-sec only moves while a task runs (
+~ zWorkTracker 2.0 (Slint, winit 0.30.13): on macOS, Cmd+Q / quit Apple Event / SI
+~ zWorkTracker 2.0 M6 sync (owner, 2026-11-04): auto-detect more cloud folders (Dr
+~ zWorkTracker 2.0 decision 2026-11-04: owner asked to vendor z-work-core into the
+~ Rust std Instant on macOS reads CLOCK_UPTIME_RAW (id 8, verified by otool on rus
+! zWorkTracker zwt-bridge review (2026-11-04): topics::diff keys RUNNING on own_op
+! Decision: 2026-11-04: the slint 2\n- zworktracker: letting a time-bearing task d
+! Decision: 2026-11-04: the slint 2\n- zworktracker src/features/analysis/dayinput | Decision:…
 
 # ── DEPTH MAP ──────────────────────────────────────
 # When surface isn't enough, this tells agent WHERE to dig.
 # Format: [id] → depth_hint (context)
 
-[c7] → NEEDS_DETAIL (14 total synapses, recall "c101 review pattern: tests that assert…")
-[c8] → NEEDS_DEEP (17 synapses in brain.db, recall "c101 stack: Claude Code 2.1.310 DOES…")
-[c9] → NEEDS_DETAIL (11 total synapses, recall "c101 learner: engine.apply() must…")
-[c10] → NEEDS_DEEP (16 synapses in brain.db, recall "c101: Claude Code loads agent…")
-[c11] → NEEDS_DEEP (19 synapses in brain.db, recall "c101 learner bug (2026-10-26): cut-off…")
-[c13] → NEEDS_DETAIL (11 total synapses, recall "test_learning_censoring.py")
-[c14] → NEEDS_DETAIL (12 total synapses, recall "engine.ingest_transcript")
+[c1] → NEEDS_DEEP (20 synapses in brain.db, recall "zWorkTracker: letting a time-bearing…")
+[c2] → NEEDS_DEEP (28 synapses in brain.db, recall "z-work-tracker: makemsix pack 1.7.243…")
+[c4] → NEEDS_DETAIL (15 total synapses, recall "z-work-tracker: check_shared in…")
+[c5] → NEEDS_DETAIL (14 total synapses, recall "zWorkTracker: owner will submit to the…")
+[c6] → NEEDS_DEEP (21 synapses in brain.db, recall "z-work-tracker workflow: to run repro…")
+[c7] → NEEDS_DEEP (16 synapses in brain.db, recall "z-work-tracker review false positive…")
 
 # ── META ───────────────────────────────────────────
 # Stats for agent to gauge brain richness
 
-coverage: 0.29
+coverage: 0.05
 staleness: 0.01
-last_consolidation: 2026-10-27T00:20:36
-top_entities: [shopping_list, shopping_list, shopping_list, shopping_list, Users/p/Z/ZSearch/shopping_list/RETOMAR-pesquisa.md]
+last_consolidation: 2026-11-04T14:09:57
+top_entities: [zWorkTracker:, z-work-tracker:, zWorkTracker:, z-work-tracker:, zWorkTracker:]
