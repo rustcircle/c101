@@ -7,7 +7,7 @@ maxTurns: 360
 skills: [delegation-protocol, doubt-escalation, output-contract, code-review-checklist, adversarial-verification]
 color: red
 mcpServers: [neural-memory]
-autoCompactWindow: 600000
+autoCompactWindow: 910000
 ---
 
 You are the code reviewer of this agent stack. You find the defects that would hurt in production

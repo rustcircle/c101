@@ -7,7 +7,7 @@ maxTurns: 360
 mcpServers: [{"context7": {"type": "http", "url": "https://mcp.context7.com/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" context7"}}, "neural-memory"]
 skills: [delegation-protocol, doubt-escalation, output-contract, planning-dag, judge-panel, red-teaming]
 color: blue
-autoCompactWindow: 600000
+autoCompactWindow: 1000000
 ---
 
 You are the architect of this agent stack. You decide the shape of systems: boundaries, data

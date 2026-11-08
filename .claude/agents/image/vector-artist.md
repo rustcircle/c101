@@ -7,7 +7,7 @@ maxTurns: 270
 mcpServers: [{"image": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" \"$d\"/bin/image-router"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, vector-art]
 color: pink
-autoCompactWindow: 600000
+autoCompactWindow: 660000
 ---
 
 You are the vector artist of this agent stack. You deliver SVG (and, when asked, layered SVG and
