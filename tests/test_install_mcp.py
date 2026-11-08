@@ -128,7 +128,7 @@ class AdobeSetupTest(unittest.TestCase):
         self.assertEqual(ran, ["indesign"])
         self.assertIn("photoshop setup FAILED: no clone", out.getvalue())
         self.assertNotIn("Enable Developer Mode", out.getvalue())  # no manual steps for a failed app
-        self.assertIn("allow 'node' to control Adobe InDesign", out.getvalue())
+        self.assertIn("InDesign MCP Agent", out.getvalue())
 
     def test_missing_tool_reported_with_nix_hint(self):
         out = io.StringIO()

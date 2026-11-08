@@ -6,12 +6,12 @@ Everything lands under ~/.claude/stack-data/adobe/ (the paths the config/mcp.opt
                  (ws://localhost:3001) as the LaunchAgent com.c101.adb-proxy, pre-fetch the server's uv deps
   after-effects  clone Dakkshin/after-effects-mcp at a pinned commit, npm install + build, copy its
                  mcp-bridge-auto.jsx into <After Effects>/Scripts/ScriptUI Panels (install-bridge.js)
-  indesign       npm-install indesign-nutria-mcp (pinned) and run its plugin-free JXA bridge
-                 (bridge-proxy.mjs, a client of the server's ws://127.0.0.1:8120 that reconnects forever) as the
-                 LaunchAgent com.c101.indesign-bridge with INDESIGN_APP set to the newest installed InDesign
+  indesign       reuse the adb-mcp clone and proxy (as photoshop), pre-fetch the server's uv deps, and remove the
+                 old com.c101.indesign-bridge LaunchAgent if an earlier install left one
   premiere-pro   npm-install premiere-pro-mcp (pinned) and install its signed CEP panel
                  (artifacts/MCPBridgeCEP.zxp) with Adobe's UnifiedPluginInstallerAgent
-  illustrator    nothing to install (ExtendScript over Apple events)
+  illustrator    reuse the adb-mcp clone and proxy, link its CEP panel (cep/com.mikechambers.ai) into
+                 ~/Library/Application Support/Adobe/CEP/extensions and set PlayerDebugMode for CSXS 12
 
 Steps are idempotent and honour --dry-run. What cannot be scripted (loading a UXP plugin in UXP Developer Tools,
 an After Effects preference, clicking Connect, macOS automation prompts) is printed at the end. `--no-adobe` unloads
@@ -41,11 +41,14 @@ REPOS = {
     "adb-mcp": ("https://github.com/mikechambers/adb-mcp", "afe5d09cdbdd4cc60434dce6b3f46fdafe15a21c"),
     "after-effects-mcp": ("https://github.com/Dakkshin/after-effects-mcp", "88d5fbf08b7ae9f015ee98e5f8c4904095cf8202"),
 }
-PACKAGES = {"indesign": ("indesign-nutria-mcp", "1.6.1"), "premiere-pro": ("premiere-pro-mcp", "1.25.0")}
+PACKAGES = {"premiere-pro": ("premiere-pro-mcp", "1.25.0")}
 PS_DEPS = ["mcp[cli]", "fonttools", "python-socketio", "requests", "websocket-client>=1.8.0", "pillow>=11.2.1",
            "numpy>=2.2.6"]
 PY = "3.13"  # the stack's uv-managed CPython (.python-version); the photoshop entry pins the same
-LABELS = {"photoshop": "com.c101.adb-proxy", "indesign": "com.c101.indesign-bridge"}
+LABELS = {"photoshop": "com.c101.adb-proxy"}
+LEGACY_LABELS = ["com.c101.indesign-bridge"]  # the old indesign-nutria-mcp JXA bridge; removed on sight
+CEP_DIR = os.path.join(HOME, "Library", "Application Support", "Adobe", "CEP", "extensions")
+CSXS = "12"  # CEP runtime of Illustrator 2024+ (cep/com.mikechambers.ai/CSXS/manifest.xml)
 
 # Package managers' bin directories that a GUI-launched Claude Code may not have on PATH (nix first).
 EXTRA_PATH = [
@@ -69,9 +72,12 @@ MANUAL = {
         "After Effects > Settings > Scripting & Expressions: tick Allow Scripts to Write Files and Access Network",
         "Window > mcp-bridge-auto.jsx, tick Auto-run commands, keep the panel open",
     ],
-    "indesign": ["allow 'node' to control Adobe InDesign when macOS asks (first InDesign tool call)"],
+    "indesign": [
+        "UXP Developer Tools > Add Plugin > %s > Load, then Plugins > InDesign MCP Agent in InDesign "
+        "(Load again after each InDesign restart)" % os.path.join(ROOT, "adb-mcp", "uxp", "id", "manifest.json"),
+    ],
     "premiere-pro": ["restart Premiere Pro, then Window > Extensions > MCP for Adobe Premiere Pro"],
-    "illustrator": ["allow automation of Adobe Illustrator when macOS asks (first Illustrator tool call)"],
+    "illustrator": ["restart Illustrator, then Window > Extensions > Illustrator MCP Agent (keep the panel open)"],
 }
 
 
@@ -166,9 +172,9 @@ def launch_agent(ctx, label: str, args: List[str], cwd: str, env: Optional[Dict[
            write_and_load)
 
 
-def remove_agents(ctx) -> None:
+def remove_agents(ctx, labels: Optional[List[str]] = None) -> None:
     domain = "gui/%d" % os.getuid()
-    for label in LABELS.values():
+    for label in labels if labels is not None else list(LABELS.values()) + LEGACY_LABELS:
         path = os.path.join(AGENTS_DIR, label + ".plist")
         if os.path.exists(path):
             ctx.do("unload and remove LaunchAgent %s" % label,
@@ -192,7 +198,9 @@ def newest_app(prefix: str) -> Optional[str]:
 
 # ---- per-app setup ------------------------------------------------------------------------------------------
 
-def setup_photoshop(ctx) -> None:
+def adb_mcp(ctx) -> str:
+    """Clone adb-mcp, run its socket proxy (one LaunchAgent shared by photoshop, indesign and illustrator) and
+    pre-fetch the servers' uv deps. Returns the checkout."""
     d = checkout(ctx, "adb-mcp")
     proxy = os.path.join(d, "adb-proxy-socket")
     if ctx.dry or not os.path.isdir(os.path.join(proxy, "node_modules")):
@@ -203,8 +211,13 @@ def setup_photoshop(ctx) -> None:
         cmd += ["--with", dep]
     mark = os.path.join(ROOT, ".photoshop-deps-%s-py%s" % (REPOS["adb-mcp"][1][:12], PY))
     if ctx.dry or not os.path.exists(mark):
-        ctx.do("pre-fetch the photoshop server's Python deps (first MCP start stays under the connect timeout)",
+        ctx.do("pre-fetch the adb-mcp servers' Python deps (first MCP start stays under the connect timeout)",
                lambda: (_run(cmd + ["python", "-c", "import mcp, socketio, numpy, PIL"]), open(mark, "w").close()))
+    return d
+
+
+def setup_photoshop(ctx) -> None:
+    adb_mcp(ctx)
 
 
 def setup_after_effects(ctx) -> None:
@@ -226,12 +239,10 @@ def setup_after_effects(ctx) -> None:
 
 
 def setup_indesign(ctx) -> None:
-    app = newest_app("Adobe InDesign")
-    if not app:
+    if not newest_app("Adobe InDesign"):
         raise RuntimeError("no /Applications/Adobe InDesign * found")
-    d = npm_package(ctx, "indesign")
-    launch_agent(ctx, LABELS["indesign"], [which("node") or "node", os.path.join(d, "bridge-proxy.mjs")], d,
-                 {"INDESIGN_APP": app})
+    adb_mcp(ctx)
+    remove_agents(ctx, LEGACY_LABELS)
 
 
 def setup_premiere(ctx) -> None:
@@ -250,13 +261,31 @@ def setup_premiere(ctx) -> None:
 def setup_illustrator(ctx) -> None:
     if not newest_app("Adobe Illustrator"):
         raise RuntimeError("no /Applications/Adobe Illustrator * found")
+    d = adb_mcp(ctx)
+    src = os.path.join(d, "cep", "com.mikechambers.ai")
+    link = os.path.join(CEP_DIR, "com.mikechambers.ai")
+    if ctx.dry or os.path.realpath(link) != os.path.realpath(src):
+        def do_link():
+            os.makedirs(CEP_DIR, exist_ok=True)
+            if os.path.islink(link):
+                os.unlink(link)
+            elif os.path.exists(link):
+                raise RuntimeError("%s exists and is not a link; move it aside and re-run" % link)
+            os.symlink(src, link)
+        ctx.do("link the Illustrator CEP panel into %s" % CEP_DIR, do_link)
+    dbg = subprocess.run(["defaults", "read", "com.adobe.CSXS." + CSXS, "PlayerDebugMode"],
+                         capture_output=True, text=True).stdout.strip()
+    if ctx.dry or dbg != "1":
+        ctx.do("allow unsigned CEP panels (defaults write com.adobe.CSXS.%s PlayerDebugMode 1)" % CSXS,
+               lambda: _run(["defaults", "write", "com.adobe.CSXS." + CSXS, "PlayerDebugMode", "1"]))
 
 
 SETUP: Dict[str, Callable] = {"photoshop": setup_photoshop, "after-effects": setup_after_effects,
                               "indesign": setup_indesign, "premiere-pro": setup_premiere,
                               "illustrator": setup_illustrator}
 NEEDS = {"photoshop": ["git", "node", "npm", "uv"], "after-effects": ["git", "node", "npm"],
-         "indesign": ["node", "npm"], "premiere-pro": ["node", "npm"], "illustrator": []}
+         "indesign": ["git", "node", "npm", "uv"], "premiere-pro": ["node", "npm"],
+         "illustrator": ["git", "node", "npm", "uv"]}
 
 
 def setup(ctx, names: List[str]) -> List[str]:

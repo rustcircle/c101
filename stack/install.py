@@ -28,8 +28,9 @@ Base install (always, idempotent):
 --adobe [APPS]  register the Adobe desktop-app MCP servers (InDesign, Illustrator, Photoshop, After Effects,
               Premiere Pro; entries tagged "_group": "adobe" in config/mcp.optional.json) at user scope, so every
               project sees them, then runs each app's one-time setup (stack/adobe.py: pinned clones and npm
-              packages, builds, LaunchAgents for the Photoshop proxy and the InDesign bridge, the After Effects
-              panel script and the Premiere CEP panel) and prints the few steps left to do inside the apps.
+              packages, builds, the adb-mcp proxy LaunchAgent shared by Photoshop, InDesign and Illustrator,
+              the Illustrator CEP link, the After Effects panel script and the Premiere CEP panel) and prints
+              the few steps left to do inside the apps.
               APPS: all (default) or a comma list of server names. Works alone or with --user.
 --adobe-no-setup  with --adobe: register only (print the manual setup instead of running it).
 --no-adobe    unregister the Adobe servers and unload/remove their LaunchAgents (the checkouts under
