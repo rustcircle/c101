@@ -38,6 +38,27 @@
       "mcp__fetch",
       "mcp__neural-memory"
     ],
+    "ask": [
+      "Bash(docker push *)",
+      "Bash(podman push *)",
+      "Bash(nerdctl push *)",
+      "Bash(buildah push *)",
+      "Bash(helm push *)",
+      "Bash(oras push *)",
+      "Bash(crane push *)",
+      "Bash(crane copy *)",
+      "Bash(skopeo copy *)",
+      "Bash(skopeo sync *)",
+      "Bash(cosign sign *)",
+      "Bash(cosign attest *)",
+      "Bash(docker login *)",
+      "Bash(podman login *)",
+      "Bash(helm registry login *)",
+      "Bash(docker buildx imagetools create *)",
+      "Bash(docker compose push *)",
+      "Bash(docker manifest push *)",
+      "Bash(podman manifest push *)"
+    ],
     "deny": [
       "Read(~/.claude/stack.env)",
       "Bash(cat ~/.claude/stack.env*)"

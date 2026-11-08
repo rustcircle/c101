@@ -188,6 +188,11 @@
     "fold_lifecycle_depth": 3,
     "fold_tiers": ["low"]
   },
+  "outward_actions": {
+    "_doc": "Pre-tool hook (stack/injection.py outward_bash): every agent, the main thread included, must get the user's approval for Bash commands that write to a container registry (push, login, cosign signing, skopeo/crane/oras copies, --push builds) or change a Kubernetes cluster whose context does not match local_kube_contexts. kubectl/helm calls whose kubeconfig lives under .stack/ (run-owned kind clusters) count as local. Mirrors the container-craft skill's safety model.",
+    "enabled": true,
+    "local_kube_contexts": ["kind-*", "k3d-*", "minikube", "docker-desktop", "rancher-desktop", "orbstack"]
+  },
   "web_content": {
     "_doc": "Web-content safety (stack/injection.py; hooks post-web and pre-tool). web_agents always run with narrow tools: files only under write_root, no network, secret reads, git push or pipe-to-shell from Bash. post-web scores every web-tool result for prompt-injection patterns: >= medium warns the agent and taints it, >= high also returns a block decision. A tainted agent's risky actions are denied (subagents) or need the user's approval (main thread), and it may only spawn tainted_may_spawn.",
     "enabled": true,

@@ -715,13 +715,31 @@ def pre_tool(inp: dict) -> Optional[dict]:
     pol = _policy()
     if _milestone_command(inp, pol):
         return None  # logged and always allowed, also for web and tainted agents
-    wc = pol.get("web_content") or {}
-    if not wc.get("enabled", True):
-        return None
     from . import injection
     tool = inp.get("tool_name") or ""
     ti = inp.get("tool_input") or {}
     proj = inp.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    decision = _web_guard(inp, pol, injection, tool, ti, proj)
+    if decision:
+        return decision
+    oa = pol.get("outward_actions") or {}
+    if tool == "Bash" and oa.get("enabled", True):
+        why = injection.outward_bash(str(ti.get("command") or ""), proj,
+                                     local_contexts=tuple(oa.get("local_kube_contexts") or injection.LOCAL_KUBE_CONTEXTS))
+        if why:
+            return _pre_decision("ask", (
+                "Outward action needs the user's confirmation: %s. Registry pushes, logins and signing, and changes "
+                "to clusters other than local kind/k3d/minikube/docker-desktop contexts, are never run on an agent's "
+                "own judgment (config/policy.json outward_actions). Subagents: return it as a needs-user Open doubt "
+                "with the exact command." % why))
+    return None
+
+
+def _web_guard(inp: dict, pol: dict, injection, tool: str, ti: dict, proj: str) -> Optional[dict]:
+    """Narrow tools for web-reading agents and the taint guard (config/policy.json web_content)."""
+    wc = pol.get("web_content") or {}
+    if not wc.get("enabled", True):
+        return None
     root = wc.get("write_root", ".stack")
     agent_type = inp.get("agent_type") or ""
     key = inp.get("agent_id") or "main"

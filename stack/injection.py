@@ -8,7 +8,9 @@ Stdlib only: it runs inside hooks on every web-tool result and every risky tool 
   persona switches and secrecy demands. Levels: ``low`` (< medium), ``medium``, ``high``.
 * ``risky_action(tool, tool_input, project_dir)`` names what a tool call would do that an
   injected instruction could abuse (network egress or pipe-to-shell in Bash, secret reads,
-  git push, writes outside ``.stack/``, typing into web forms), or returns None.
+  git push, registry pushes, writes outside ``.stack/``, typing into web forms), or returns None.
+* ``outward_bash(cmd, ...)`` names a registry write or a change to a non-local Kubernetes cluster; the
+  pre-tool hook asks the user before any agent runs one (``config/policy.json`` ``outward_actions``).
 * Taint state (``mark`` / ``taint_of``): which agents in a session have ingested flagged
   content, kept in ``<data>/sessions/<session>.taint.json``.
 
@@ -208,6 +210,164 @@ def risky_bash(cmd: str) -> Optional[str]:
             targets = [a for a in w[1:] if not a.startswith("-")]
             if any(".stack/" not in t and not t.startswith(".stack") for t in targets):
                 return "recursive delete outside .stack/"
+    for w in segs:
+        why = _registry_write(w)
+        if why:
+            return why
+    return None
+
+
+# --- outward container actions: registry writes and changes to non-local clusters -----------------
+# These leave the machine for good (an image in a registry, a keyless signature in a public transparency log,
+# a change to a shared cluster), so the pre-tool hook asks the user before any agent runs them. Mirrors the
+# container-craft skill's safety model (section 2); the agent's prompt is the first line, this is the backstop.
+
+LOCAL_KUBE_CONTEXTS = ("kind-*", "k3d-*", "minikube", "docker-desktop", "rancher-desktop", "orbstack")
+_ENGINES = {"docker", "podman", "nerdctl", "finch"}
+_KUBE_CLIS = {"kubectl", "oc", "kubecolor"}
+_KUBE_READ = {"get", "describe", "logs", "events", "top", "explain", "api-resources", "api-versions", "version",
+              "diff", "wait", "completion", "kustomize", "cluster-info", "options", "help"}
+_KUBE_CONFIG_READ = {"view", "get-contexts", "current-context", "get-clusters", "get-users"}
+_HELM_CLUSTER_WRITE = {"install", "upgrade", "uninstall", "delete", "del", "un", "rollback", "test"}
+# Global flags that take a separate value, so the verb is found after them.
+_VALUE_FLAGS = {"--context", "--kube-context", "--kubeconfig", "-n", "--namespace", "--cluster", "--user", "-s",
+                "--server", "--token", "--as", "--as-group", "--request-timeout", "--log-level", "-H", "--host",
+                "-c", "--connection", "--url", "--registry-config", "--repository-config", "--repository-cache"}
+_LOCAL_REF = ("oci:", "oci-archive:", "dir:", "docker-archive:", "docker-daemon:", "containers-storage:")
+_KUBECONFIG_ASSIGN = re.compile(r"(?:^|[\s;&|(])KUBECONFIG=(['\"]?)([^\s'\";&|]+)\1")
+_CURRENT_CONTEXT = re.compile(r"^current-context:\s*['\"]?([^'\"\s#]+)", re.M)
+
+
+def _flag(w: List[str], *names: str) -> Optional[str]:
+    """Value of the last occurrence of any of the flags (kubectl and helm let a later flag win)."""
+    val = None
+    for i, a in enumerate(w):
+        for n in names:
+            if a == n and i + 1 < len(w):
+                val = w[i + 1]
+            elif a.startswith(n + "="):
+                val = a[len(n) + 1:]
+    return val
+
+
+def _positional(w: List[str]) -> List[str]:
+    """Words after the program that are not flags or flag values."""
+    out, i = [], 1
+    while i < len(w):
+        a = w[i]
+        if a.startswith("-"):
+            i += 2 if a in _VALUE_FLAGS else 1
+            continue
+        out.append(a)
+        i += 1
+    return out
+
+
+def _registry_write(w: List[str]) -> Optional[str]:
+    h, sub = w[0], _positional(w)
+    pushes = any(a == "--push" or a == "--push=true" or "type=registry" in a or "push=true" in a for a in w[1:])
+    if "login" in sub[:2] and h in _ENGINES | {"buildah", "helm", "oras", "crane", "skopeo", "cosign", "regctl"}:
+        return "registry login (%s)" % h
+    if h in _ENGINES | {"buildah", "helm", "oras", "crane"} and sub[:1] == ["push"]:
+        return "push to a registry (%s push)" % h
+    if h in _ENGINES and (sub[:2] in (["manifest", "push"], ["image", "push"], ["compose", "push"])
+                          or sub[:3] == ["buildx", "imagetools", "create"]):
+        return "push to a registry (%s %s)" % (h, " ".join(sub[:2]))
+    if h in {"docker-compose", "podman-compose"} and sub[:1] == ["push"]:
+        return "push to a registry (%s push)" % h
+    if pushes and (h in _ENGINES | {"buildah", "docker-buildx", "ko", "depot"}):
+        return "build that pushes to a registry (%s --push / type=registry)" % h
+    if h == "skopeo" and sub[:1] in (["copy"], ["sync"], ["delete"]):
+        dest = sub[-1] if len(sub) > 2 else ""
+        if sub[0] == "delete" or not dest.startswith(_LOCAL_REF):
+            return "registry write (skopeo %s)" % sub[0]
+    if h == "crane" and sub[:1] and sub[0] in {"copy", "cp", "mutate", "append", "tag", "delete", "rebase",
+                                                 "flatten", "index"}:
+        return "registry write (crane %s)" % sub[0]
+    if h == "oras" and sub[:1] and sub[0] in {"push", "attach", "copy", "cp", "tag", "manifest"}:
+        return "registry write (oras %s)" % sub[0]
+    if h == "cosign" and sub[:1] and sub[0] in {"sign", "attest", "sign-blob", "attest-blob", "upload", "copy",
+                                                  "attach", "clean"}:
+        return "signing or registry write (cosign %s; keyless signing adds a permanent public log entry)" % sub[0]
+    if h == "ko" and sub[:1] and sub[0] in {"build", "publish", "resolve", "apply", "create", "run"} \
+            and not any(a in ("--local", "-L", "--push=false") for a in w[1:]):
+        return "ko %s pushes to a registry (no --local)" % sub[0]
+    return None
+
+
+def _kube_write(w: List[str]) -> Optional[str]:
+    h, sub = w[0], _positional(w)
+    if h in _KUBE_CLIS:
+        if not sub or sub[0] in _KUBE_READ:
+            return None
+        if sub[0] == "auth" and sub[1:2] != ["reconcile"]:
+            return None
+        if sub[0] == "rollout" and sub[1:2] in (["status"], ["history"]):
+            return None
+        if sub[0] == "config":
+            return None if sub[1:2] and sub[1] in _KUBE_CONFIG_READ else "%s config %s" % (h, " ".join(sub[1:2]))
+        if any(a in ("--dry-run=client", "--dry-run=none") for a in w[1:]) and sub[0] in {"apply", "create",
+                                                                                          "run", "expose", "set"}:
+            return None
+        return "%s %s" % (h, sub[0])
+    if h == "helm" and sub[:1] and sub[0] in _HELM_CLUSTER_WRITE:
+        if any(a == "--dry-run" or a in ("--dry-run=client", "--dry-run=true") for a in w[1:]):
+            return None
+        return "helm %s" % sub[0]
+    if h in {"argocd", "flux"} and sub[:1] and sub[0] not in {"version", "get", "list", "logs", "check", "tree",
+                                                               "diff", "stats", "export", "completion", "help"}:
+        if not (h == "argocd" and sub[:2] in (["app", "get"], ["app", "list"], ["app", "diff"], ["app", "history"])):
+            return "%s %s" % (h, " ".join(sub[:2]))
+    return None
+
+
+def _glob(name: str, pattern: str) -> bool:
+    return name.startswith(pattern[:-1]) if pattern.endswith("*") else name == pattern
+
+
+def _kube_context(w: List[str], cmd: str, project_dir: str, env: Dict[str, str]) -> Optional[str]:
+    """The context a kubectl/helm call will use, '' when its kubeconfig is run-owned under .stack/ (local by
+    construction), or None when no kubeconfig exists (the call cannot reach any cluster)."""
+    explicit = _flag(w, "--context", "--kube-context")
+    m = _KUBECONFIG_ASSIGN.search(cmd)
+    kc = _flag(w, "--kubeconfig") or (m.group(2) if m else None) or env.get("KUBECONFIG") \
+        or os.path.join(env.get("HOME") or os.path.expanduser("~"), ".kube", "config")
+    files = [f for f in kc.split(os.pathsep) if f]
+    if files and all(under_root(f, project_dir) for f in files):
+        return ""
+    if explicit:
+        return explicit
+    for f in files:
+        try:
+            with open(os.path.join(project_dir, os.path.expanduser(f)), encoding="utf-8") as fh:
+                found = _CURRENT_CONTEXT.search(fh.read(1 << 20))
+        except OSError:
+            continue
+        if found:
+            return found.group(1)
+    return None if not any(os.path.exists(os.path.join(project_dir, os.path.expanduser(f))) for f in files) \
+        else "(no current-context)"
+
+
+def outward_bash(cmd: str, project_dir: str = ".", env: Optional[Dict[str, str]] = None,
+                 local_contexts=LOCAL_KUBE_CONTEXTS) -> Optional[str]:
+    """Why this Bash command writes to a registry or changes a non-local cluster, or None."""
+    env = os.environ if env is None else env
+    for w in _segments(cmd):
+        if w[0] in SHELLS and "-c" in w[1:]:
+            inner = " ".join(w[w.index("-c") + 1:]).strip().strip("'\"")
+            why = outward_bash(inner, project_dir, env, local_contexts) if inner and inner != cmd else None
+            if why:
+                return why
+        why = _registry_write(w)
+        if why:
+            return why
+        verb = _kube_write(w)
+        if verb:
+            ctx = _kube_context(w, cmd, project_dir, env)
+            if ctx is None or ctx == "" or any(_glob(ctx, p) for p in local_contexts):
+                continue
+            return "cluster change on non-local context %s (%s)" % (ctx, verb)
     return None
 
 

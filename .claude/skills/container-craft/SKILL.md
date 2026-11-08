@@ -73,6 +73,10 @@ entry), `docker login`/`helm registry login`. Local equivalents: `--load` (singl
 recipes in `container-images` sections 7-8 belong in CI (`ci-pipelines`); hand them back as
 `needs-user` with the exact command.
 
+The `pre-tool` hook backs these rules up (`config/policy.json` `outward_actions`): registry writes and
+changes on a context outside `kind-*`, `k3d-*`, `minikube`, `docker-desktop`, `rancher-desktop`, `orbstack`
+(or with a kubeconfig outside `.stack/`) return `ask`. Treat that prompt as a mistake on your side, not a gate to pass.
+
 ### 2.4 Secrets
 Never print: Secret data (`kubectl get secret -o yaml|json`, `-o jsonpath` on `.data`), `helm get
 values|manifest|all` (rendered secrets), `kubectl get pod|cm -o yaml` without filtering env,

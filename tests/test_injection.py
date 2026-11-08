@@ -240,6 +240,103 @@ class WebContentHookTests(unittest.TestCase):
             hooks._policy = orig
 
 
+class OutwardActionTests(unittest.TestCase):
+    """Registry writes and non-local cluster changes need the user's approval (policy outward_actions)."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.proj = os.path.join(self.tmp, "proj")
+        os.makedirs(os.path.join(self.proj, ".stack", "out"))
+        self.home = os.path.join(self.tmp, "home")
+        os.makedirs(os.path.join(self.home, ".kube"))
+        self.kc = os.path.join(self.home, ".kube", "config")
+        self.set_current("prod-eu")
+        self.env = {"HOME": self.home}
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def set_current(self, ctx):
+        with open(self.kc, "w") as fh:
+            fh.write("apiVersion: v1\nkind: Config\ncurrent-context: %s\ncontexts: []\n" % ctx)
+
+    def out(self, cmd):
+        return injection.outward_bash(cmd, self.proj, self.env)
+
+    def test_registry_writes(self):
+        writes = ["docker push ghcr.io/o/app:1", "podman push quay.io/o/app", "sudo docker login ghcr.io",
+                  "docker buildx build --platform linux/amd64,linux/arm64 --push -t r/o/a .",
+                  "docker buildx build --output type=registry -t r/a .", "docker buildx imagetools create -t r/a:1 r/a:0",
+                  "docker compose push", "buildah push img docker://r/a", "skopeo copy oci:img docker://r/a",
+                  "crane copy a b", "cosign sign --yes r/a@sha256:00", "oras push r/a f.txt", "helm push c.tgz oci://r",
+                  "helm registry login r", "ko build ./cmd/app", "make && docker push r/a",
+                  "bash -c 'docker push r/a'", "nerdctl push r/a", "podman manifest push l r/a"]
+        local = ["docker build -t app:dev .", "docker buildx build --load -t app .", "docker images",
+                 "docker buildx build --output type=oci,dest=.stack/out/i.tar .", "skopeo copy docker://r/a oci:img",
+                 "skopeo inspect docker://r/a", "crane digest r/a", "cosign verify r/a", "ko build --local ./cmd",
+                 "kind load docker-image app:dev", "podman run --rm app", "docker pull alpine", "trivy image app:dev"]
+        for c in writes:
+            self.assertIsNotNone(self.out(c), c)
+            self.assertIsNotNone(injection.risky_bash(c), c)  # also denied to web-reading and tainted agents
+        for c in local:
+            self.assertIsNone(self.out(c), c)
+
+    def test_cluster_changes_on_non_local_contexts(self):
+        writes = ["kubectl apply -f k8s/", "kubectl -n app rollout restart deploy/api", "kubectl delete pod x",
+                  "kubectl --context prod-us scale deploy/a --replicas=0", "helm upgrade --install a ./chart",
+                  "kubectl apply --dry-run=server -f k8s/", "kubectl exec -it p -- sh", "kubectl config use-context x",
+                  "oc apply -f x.yaml", "kubectl auth reconcile -f rbac.yaml", "argocd app sync api",
+                  "kubectl --context=kind-dev --context prod apply -f x"]
+        reads = ["kubectl get pods -A", "kubectl describe pod x", "kubectl logs p --previous", "kubectl diff -f k8s/",
+                 "kubectl auth can-i list pods", "kubectl rollout status deploy/a", "kubectl config get-contexts",
+                 "kubectl apply --dry-run=client -f k8s/", "helm template a ./chart", "helm lint ./chart",
+                 "helm list -A", "helm upgrade --install a ./chart --dry-run", "kubectl version --client"]
+        for c in writes:
+            self.assertIn("non-local context", self.out(c) or "", c)
+        for c in reads:
+            self.assertIsNone(self.out(c), c)
+
+    def test_local_contexts_and_run_owned_kubeconfig(self):
+        self.assertIsNone(self.out("kubectl --context kind-verify apply -f k8s/"))
+        self.assertIsNone(self.out("helm --kube-context k3d-dev install a ./chart"))
+        self.assertIsNone(self.out("KUBECONFIG=.stack/out/container-expert/s1/kubeconfig kubectl apply -f k8s/"))
+        self.assertIsNone(self.out("kubectl --kubeconfig .stack/out/kc apply -f k8s/"))
+        self.assertIsNotNone(self.out("kubectl --context prod apply -f x"))
+        self.set_current("docker-desktop")
+        self.assertIsNone(self.out("kubectl apply -f k8s/"))
+        self.assertIsNotNone(self.out("kubectl --context gke_p_z_c apply -f k8s/"))
+        os.remove(self.kc)  # no kubeconfig at all: the call cannot reach a cluster
+        self.assertIsNone(self.out("kubectl apply -f k8s/"))
+
+    def test_hook_asks_for_every_agent_and_policy_can_disable(self):
+        from stack import hooks
+        orig_env = os.environ.get("HOME")
+        os.environ["HOME"] = self.home
+        try:
+            p = {"hook_event_name": "PreToolUse", "session_id": "S", "cwd": self.proj, "tool_name": "Bash",
+                 "tool_input": {"command": "docker push r/a:1"}}
+            for extra in ({}, {"agent_id": "a1", "agent_type": "container-expert"}):
+                out = hooks.pre_tool(dict(p, **extra))
+                self.assertEqual(out["hookSpecificOutput"]["permissionDecision"], "ask")
+                self.assertIn("push to a registry", out["hookSpecificOutput"]["permissionDecisionReason"])
+            p["tool_input"] = {"command": "kubectl apply -f k8s/"}
+            self.assertEqual(hooks.pre_tool(p)["hookSpecificOutput"]["permissionDecision"], "ask")
+            p["tool_input"] = {"command": "kubectl --context kind-x apply -f k8s/"}
+            self.assertIsNone(hooks.pre_tool(p))
+            orig = hooks._policy
+            try:
+                hooks._policy = lambda: {"outward_actions": {"enabled": False}, "web_content": {"enabled": False}}
+                p["tool_input"] = {"command": "docker push r/a:1"}
+                self.assertIsNone(hooks.pre_tool(p))
+            finally:
+                hooks._policy = orig
+        finally:
+            if orig_env is None:
+                os.environ.pop("HOME", None)
+            else:
+                os.environ["HOME"] = orig_env
+
+
 class WiringTests(unittest.TestCase):
     def test_settings_route_web_tools_and_risky_tools(self):
         with open(os.path.join(ROOT, ".claude", "settings.json")) as fh:
