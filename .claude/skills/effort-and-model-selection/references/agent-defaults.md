@@ -78,6 +78,7 @@ alternative; fix the brief or split the job instead. Re-tiering is stack-tuner's
 | kotlin-expert | MEDIUM | high | 540 | 540-3000 | - | computer-science-expert (ADVANCED) |
 | python-expert | MEDIUM | high | 540 | 540-3000 | - | computer-science-expert (ADVANCED) |
 | typescript-expert | MEDIUM | high | 540 | 540-3000 | - | computer-science-expert (ADVANCED) |
+| container-expert | MEDIUM | high | 540 | 540-3000 | - | security-auditor (ADVANCED) for audits, debugger (ADVANCED) for non-container causes |
 | mathematics-expert | ADVANCED | max | 540 | 540-1800 / high-max | tester (MEDIUM) for a numeric sanity script | adversarial-verifier (ADVANCED) per proof step |
 | physics-expert | ADVANCED | xhigh | 450 | 450-3000 | quick-researcher (MEDIUM) for constants and units | mathematics-expert (ADVANCED) |
 | graphic-design-expert | ADVANCED | high | 360 | 360-3000 | image-generator (MEDIUM) to produce assets | - |

@@ -198,6 +198,7 @@ listed by name only, so they cost almost no context until used. Each skill is `.
 | `python` | `coding-core` | `python-craft` | `python-expert` (Python 3.13 with uv: packaging, typing, asyncio, pytest, performance) |
 | `typescript` | `coding-core` | `typescript-craft` | `typescript-expert` (TypeScript/Node/Bun: strict typing, tsconfig, testing, runtime patterns) |
 | `devops` | `coding-core` | | containers, CI/CD, shell robustness, observability |
+| `containers` | `coding-core`, `devops` | `container-craft` | `container-expert` (Docker, Podman/Quadlet, Kubernetes, Helm, Kustomize; skills `kubernetes-workloads`, `kubernetes-security-policy`, `kubernetes-troubleshooting`, `podman-rootless`; reuses `container-images` from `devops`) |
 
 Granular skills shipped today (169, plus the `coding-general` hub). Each hub ends with a "Granular skills"
 routing table naming them; hubs keep their full original text.

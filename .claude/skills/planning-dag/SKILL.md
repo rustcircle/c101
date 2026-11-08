@@ -75,6 +75,7 @@ swarm-coordinator or concurrent-dispatcher for homogeneous items.
 | undecided architecture or technology (spike) | architect |
 | red-team a plan or design | plan-critic |
 | code in a language with an expert | rust-expert, cpp-expert, go-expert, haskell-expert, julia-expert, java-expert, kotlin-expert, python-expert, typescript-expert |
+| containers, images, Kubernetes manifests, Helm/Kustomize, Quadlet | container-expert |
 | glue, config, scripts with no matching expert | built-in general-purpose (no per-call model/effort; the hook strips them) |
 | algorithms, consistency, concurrency design | computer-science-expert |
 | domain analysis | mathematics-expert, physics-expert, quantum-computing-expert, computer-graphics-expert |

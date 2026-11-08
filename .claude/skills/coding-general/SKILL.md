@@ -87,6 +87,16 @@ Delegate the checks: `tester` for missing tests, `code-quality-analyst` for metr
 | `shell-scripting` | writing, reviewing or debugging a shell script, Makefile/justfile recipe or CI run step |
 | `observability-instrumentation` | adding logging, tracing, metrics or alerts, or when debugging needs better telemetry |
 
+### Containers and Kubernetes (pack `containers`, hub `container-craft`, agent `container-expert`)
+
+| skill | load when |
+|---|---|
+| `container-craft` | any container or Kubernetes task: safety model for clusters and registries, the verification ladder, routing |
+| `kubernetes-workloads` | writing or reviewing Kubernetes manifests, probes, resources, Helm charts or Kustomize overlays |
+| `kubernetes-security-policy` | RBAC, NetworkPolicy, Pod Security Standards, securityContext hardening |
+| `kubernetes-troubleshooting` | CrashLoopBackOff, OOMKilled, ImagePullBackOff, Pending pods, stuck rollouts, `kubectl debug` |
+| `podman-rootless` | rootless Podman, pods, Quadlet systemd units, Buildah, podman machine |
+
 Core skills that complement these: `testing-strategy`, `code-review-checklist`, `debugging-method`,
 `performance-optimization`, `security-review`, `code-quality-metrics`.
 

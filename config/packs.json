@@ -515,6 +515,25 @@
         "prose-stylist",
         "chat-aide"
       ]
+    },
+    "containers": {
+      "description": "container-craft hub skill, granular Kubernetes and Podman skills and the container-expert agent (image craft stays in devops: container-images)",
+      "requires": [
+        "core",
+        "coding-core",
+        "devops"
+      ],
+      "skills": [
+        "container-craft",
+        "kubernetes-security-policy",
+        "kubernetes-troubleshooting",
+        "kubernetes-workloads",
+        "podman-rootless"
+      ],
+      "agents": [
+        "container-expert"
+      ],
+      "hub": "container-craft"
     }
   }
 }

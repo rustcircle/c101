@@ -499,6 +499,12 @@
         270,
         3000
       ]
+    },
+    "container-expert": {
+      "maxTurns": [
+        540,
+        3000
+      ]
     }
   },
   "apply_compact_window": true

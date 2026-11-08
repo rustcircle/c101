@@ -130,7 +130,9 @@ judgement.
   rust-expert (UB in unsafe, async cancellation), cpp-expert (sanitizer reports, memory model),
   java-expert or kotlin-expert (GC, JIT, coroutine cancellation), haskell-expert (space leaks),
   julia-expert (type instability, world-age errors), python-expert (asyncio stalls, import and
-  packaging errors), typescript-expert (unhandled rejections, ESM/CJS resolution). Default opus/high or sonnet/high per their files.
+  packaging errors), typescript-expert (unhandled rejections, ESM/CJS resolution); container-expert
+  for container and cluster causes (CrashLoopBackOff, OOMKilled, ImagePullBackOff, probes, image
+  architecture, rootless Podman permissions). Default opus/high or sonnet/high per their files.
 - **tester** for the regression, property-based or fuzz test once the cause is known.
 - **adversarial-verifier** (opus/high) when the fix touches critical code (auth, money, data loss,
   concurrency primitives) or when your evidence for the cause is circumstantial: brief it to refute

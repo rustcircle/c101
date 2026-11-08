@@ -398,6 +398,12 @@
       "effort": "low",
       "maxTurns": 18,
       "why": "real-time message checks: Sonnet keeps tone judgment sharp at low effort; no tools needed for a pasted draft"
+    },
+    "container-expert": {
+      "tier": "MEDIUM_MODEL",
+      "effort": "high",
+      "maxTurns": 540,
+      "why": "Docker, Podman, OCI and Kubernetes specialist; well-trodden ecosystem with tool-heavy verification (builds, scanners, kind clusters), peers go/python/typescript"
     }
   }
 }

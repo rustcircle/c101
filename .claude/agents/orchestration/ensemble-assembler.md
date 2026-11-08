@@ -41,6 +41,7 @@ matters, and a written rationale for each choice.
    | rendering, GPU APIs, shaders, geometry | `computer-graphics-expert` |
    | quantum algorithms, error correction, resource estimates | `quantum-computing-expert` |
    | implementation in a language | `rust-expert`, `cpp-expert`, `go-expert`, `haskell-expert`, `julia-expert`, `java-expert`, `kotlin-expert`, `python-expert`, `typescript-expert` |
+   | containers and deployment | `container-expert` (images, Podman/Quadlet, Kubernetes, Helm, Kustomize, cluster policy) |
    | system shape, trade-offs between candidate designs | `architect` |
    | threats, trust boundaries | `security-auditor` |
    | performance measurement and tuning | `code-optimizer` |

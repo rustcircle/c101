@@ -140,7 +140,8 @@ You own the threat model, the triage and the final severity. Leg work and verifi
   as an Open doubt. You merge and dedupe.
 - **rust-expert** or **cpp-expert** for unsafe, FFI and undefined-behaviour audits (default opus/high).
   **go-expert**, **java-expert**, **kotlin-expert**, **python-expert** or **typescript-expert** for
-  framework-specific security semantics.
+  framework-specific security semantics; **container-expert** to write and prove hardening of images,
+  RBAC, NetworkPolicy and Pod Security settings on a local kind cluster.
   Each brief says "answer this one question directly; do not delegate to security-auditor or
   reviewer (parent is security-auditor)".
 - **quick-researcher** or **fact-checker** (both MEDIUM tier; no `model`/`effort` on the call) for

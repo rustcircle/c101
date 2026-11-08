@@ -103,7 +103,8 @@ before a checkpoint or irreversible node; `deliverable` for `summary.md`.
 
 - **Planning**: `planner`, `architect`, `plan-critic`.
 - **Implementation**: `rust-expert`, `cpp-expert`, `go-expert`, `haskell-expert`, `julia-expert`,
-  `java-expert`, `kotlin-expert`, `python-expert`, `typescript-expert`; `computer-science-expert`
+  `java-expert`, `kotlin-expert`, `python-expert`, `typescript-expert`; `container-expert` for
+  images, compose, Quadlet, Kubernetes manifests, Helm and Kustomize; `computer-science-expert`
   for algorithms and distributed-systems nodes; `computer-graphics-expert`, `physics-expert`,
   `mathematics-expert`, `quantum-computing-expert` for domain-heavy nodes; image nodes to
   `image-generator`, `image-editor`, `vector-artist`; `general-purpose` (no per-call `effort`; the

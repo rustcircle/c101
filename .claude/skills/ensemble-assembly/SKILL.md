@@ -68,6 +68,7 @@ results within 1e-8 relative error of the reference, 1 kHz control loop":
 | Rendering, GPU, geometry | `computer-graphics-expert` | opus / high |
 | Visual design, typography, colour | `graphic-design-expert` | opus / high |
 | Language craft | `rust-expert`, `cpp-expert`, `haskell-expert` (opus / high); `go-expert`, `julia-expert`, `java-expert`, `kotlin-expert`, `python-expert`, `typescript-expert` (sonnet / high) | as listed |
+| Containers and deployment | `container-expert` (sonnet / high) | images, Podman/Quadlet, Kubernetes manifests, Helm, Kustomize, RBAC and NetworkPolicy |
 | System architecture and trade-offs | `architect` | opus / xhigh |
 | Security | `security-auditor` | opus / high |
 | Performance engineering | `code-optimizer` | opus / high |

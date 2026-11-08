@@ -180,8 +180,12 @@ site-packages only if measured. Report sizes as a before/after table (section 12
 
 ```bash
 docker buildx create --name multi --use
-docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/acme/api:1.4.0 --push .
+docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/acme/api:1.4.0 --push .   # CI only
+docker buildx build --platform linux/amd64,linux/arm64 --output type=oci,dest=api-oci.tar .   # local check, no push
 ```
+- Pushing and signing (`--push`, `imagetools create`, `cosign sign`) write to shared registries and
+  public transparency logs: run them in CI (`ci-pipelines`); locally use `--load` (one platform) or an
+  OCI tar, and leave pushes to the user.
 - QEMU emulation is commonly 5-20x slower for compile-heavy steps. Prefer native runners
   (`ubuntu-24.04` and `ubuntu-24.04-arm` on GitHub, available for public and private repos), push
   each platform by digest, then merge: `docker buildx imagetools create -t ghcr.io/acme/api:1.4.0

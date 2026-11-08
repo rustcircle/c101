@@ -23,6 +23,7 @@ Model / effort / maxTurns are the initial values from `config/models.json` (`bin
 | `kotlin-expert` | sonnet / high | 540 | context7 | coroutines and Flow, structured concurrency, Multiplatform, Compose | JVM GC tuning |
 | `python-expert` | sonnet / high | 540 | context7 | typed Python (mypy/pyright), asyncio with TaskGroup, uv packaging, pytest, FastAPI and pydantic v2, profiling | numeric kernels needing native code |
 | `typescript-expert` | sonnet / high | 540 | context7 | strict TypeScript, ESM/CJS and package exports, Node services, Vitest/Jest, React components | browser rendering performance, GPU |
+| `container-expert` | sonnet / high | 540 | context7 | Docker/Podman images, Quadlet, Kubernetes manifests, Helm, Kustomize, RBAC, NetworkPolicy, pod debugging on kind | application code behind a crash, cloud-provider IAM |
 
 ## Cross-cutting members
 

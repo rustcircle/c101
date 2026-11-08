@@ -38,7 +38,7 @@ const DEFAULT_VOTERS = [
 const STACK_AGENTS = ['concurrent-dispatcher', 'swarm-coordinator', 'mesh-router', 'ensemble-assembler', 'plan-critic', 'adversarial-verifier',
   'code-quality-analyst', 'quick-researcher', 'deep-researcher', 'browser-operator', 'computer-operator', 'paper-researcher', 'source-summarizer',
   'file-summarizer', 'computer-graphics-expert', 'computer-science-expert', 'quantum-computing-expert', 'rust-expert', 'cpp-expert', 'go-expert',
-  'haskell-expert', 'julia-expert', 'java-expert', 'kotlin-expert', 'python-expert', 'typescript-expert', 'mathematics-expert', 'physics-expert',
+  'haskell-expert', 'julia-expert', 'java-expert', 'kotlin-expert', 'python-expert', 'typescript-expert', 'container-expert', 'mathematics-expert', 'physics-expert',
   'graphic-design-expert', 'vector-artist',
   'cross-domain-synthesizer', 'expert-panel-chair', 'debate-moderator', 'analogy-mapper', 'first-principles-decomposer', 'general-chat',
   'stack-tuner', 'agent-architect']

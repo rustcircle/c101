@@ -48,6 +48,7 @@ route is your fault, not the child's.
    | literature | papers, citations, method comparison | `paper-researcher` | 1-5 |
    | web extraction | given URLs/sites, JS-heavy pages | `web-scraper` / `web-crawler` / `browser-operator` | 1-3 |
    | single coding change | one language, bounded scope | language expert (`python-expert`, `typescript-expert`, `rust-expert`, `go-expert`, ...) then `validator` | 2-4 |
+   | containers / Kubernetes | Dockerfile, compose, Quadlet, manifests, Helm/Kustomize, RBAC/NetworkPolicy, a failing pod | `container-expert` then `validator`; root cause in app code -> the language expert; a full security audit -> `security-auditor`; a bug with no container or cluster cause -> `debugger` | 2-4 |
    | multi-phase project | plan + implement + verify, several files/agents | `orchestrator` | 8-60 |
    | bug | failing test, crash, regression | `debugger` | 2-6 |
    | code review | diff, PR, path | `/review-verify`, or `reviewer` for a small diff | 1-2 (`reviewer`); `/review-verify` 6 + 3 x findings, typically 20-80 |
@@ -133,7 +134,7 @@ route is your fault, not the child's.
   `reviewer`, `debugger`, `tester`, `validator`, `quality-control`, `security-auditor`,
   `code-optimizer`, `code-quality-analyst`, `quick-researcher`, `deep-researcher`, `paper-researcher`,
   `web-searcher`, `web-scraper`, `web-crawler`, `browser-operator`, `computer-operator`,
-  `fact-checker`, `file-summarizer`, the language and science experts, the image agents (`image-generator`, `image-editor`, `vector-artist`, `visual-reviewer`),
+  `fact-checker`, `file-summarizer`, the language and science experts, `container-expert`, the image agents (`image-generator`, `image-editor`, `vector-artist`, `visual-reviewer`),
   the writing agents (`writing-project-builder`, `fiction-writer`, `manuscript-reviewer`, `copy-editor`, `prose-stylist`, `chat-aide`),
   `cross-domain-synthesizer`, `expert-panel-chair`, `debate-moderator`, `first-principles-decomposer`,
   `analogy-mapper`, `general-chat`, `stack-tuner`, `agent-architect`.
