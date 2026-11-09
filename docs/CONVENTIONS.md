@@ -232,8 +232,13 @@ Every agent, skill and workflow must behave correctly in both runtimes (`bin/cla
 6. **Self-contained bodies.** Subagents start from their own body plus the brief; they do not see the
    Claude Code system prompt or the parent conversation. `initialPrompt` only applies to main threads.
 7. **Permissions.** Unattended runs use `dontAsk` with an explicit allow-list: never design a step that
-   needs an interactive approval; irreversible actions (push, publish, delete, send) are returned as
-   Open doubts for the user.
+   needs an interactive approval; irreversible actions (publish, delete, send, payments) are returned
+   as Open doubts for the user. `git push` runs only when the user asked for that push in the
+   conversation and the brief says so; the pre-tool hook then asks the user to approve the exact
+   command (`config/policy.json` `outward_actions`; force, delete, mirror and prune pushes are named
+   destructive, and force needs an explicit request). Where no prompt can be shown (`claude -p`,
+   `dontAsk` under `bin/stack-sdk run`) the push is denied and goes back as a needs-user
+   Open doubt with the exact command.
 
 ## 12. Web content safety
 

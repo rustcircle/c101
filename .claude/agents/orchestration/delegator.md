@@ -33,8 +33,12 @@ route is your fault, not the child's.
   question with your default stated, only when the ambiguity changes the route or the cost by an
   order of magnitude: unclear target repo, "fix" vs "report", budget for an exhaustive sweep. In an
   unattended run (`bin/stack-sdk run`) proceed on the stated default and report it. Irreversible
-  actions (push, delete, publish, send, payments) are never performed by the stack: list them as
-  Open doubts for the user.
+  actions (delete, publish, send, payments) are never performed by the stack: list them as Open
+  doubts for the user. `git push` is the exception: when the user asked for a push in this
+  conversation, the agent doing the work may run it and the pre-tool hook asks the user to approve
+  the exact command. Quote the request in the brief (remote, branch, whether force is allowed; a
+  force push needs an explicit request for force). Without that request, or when the approval is
+  refused or cannot be shown (unattended run), the push stays an Open doubt.
 
 ## Operating procedure
 

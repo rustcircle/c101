@@ -442,7 +442,7 @@ assumption costs the whole task.
 | scope / requirement | ambiguous brief, conflicting constraints | the caller as an Open doubt (`partial` or `blocked`); depth 0 asks the user in plain text at the end of its turn; never a researcher |
 | oversized input | 3,000-line log, 200-page PDF, a 900-line child report | file-summarizer (LOW); fetched pages: source-summarizer (LOW) |
 | domain judgement | numerical stability, memory model, colour science | the matching expert with one scoped question |
-| irreversible or approval-gated action | push, publish, delete, send, payment | never performed; returned as `[scope|high] ... - route: user` with `Status: partial` or `blocked` |
+| irreversible or approval-gated action | publish, delete, send, payment, a push the user did not ask for | never performed; returned as `[scope|high] ... - route: user` with `Status: partial` or `blocked`. A `git push` the user asked for runs after the pre-tool hook's approval prompt; refused or unattended, it is returned the same way |
 
 Limits: at `remaining_depth` 0 nothing can be escalated, so every doubt is recorded and Confidence
 lowered; at 1-2 every route except deep-researcher; at `budget="soft"` only high-impact blocking

@@ -472,7 +472,7 @@ and the SDK produce the same behaviour:
 | Tiers are authoritative | a per-call override would bypass tier and learned effort | `pre-agent` strips `model`/`effort`; `build_options` rejects non-tier models; `bin/claude-stack` refuses `--model`, `--effort` and `--agent` |
 | No interactive-only features without a fallback | built-in computer use and Claude in Chrome do not exist under the SDK or `-p` | agents use Playwright, the `desktop-sandbox` server (sandboxed computer use), or the optional `peekaboo` server with the user's quoted approval (`bin/stack mcp enable peekaboo`), or report the item blocked; agent teams and slash commands typed into prompts are never relied on |
 | Self-contained bodies | subagents see only their body and the brief, not the Claude Code system prompt or the parent conversation | convention; `initialPrompt` applies only to main threads |
-| No interactive approvals | `dontAsk` with `--permission-prompts none` denies anything off the allow-list without asking | no step may need an interactive approval; irreversible actions (push, publish, delete, send) are returned as Open doubts for the user |
+| No interactive approvals | `dontAsk` with `--permission-prompts none` denies anything off the allow-list without asking | no step may need an interactive approval; irreversible actions (push, publish, delete, send) are returned as Open doubts for the user (the pre-tool hook denies outward actions such as `git push` under `dontAsk` with that instruction) |
 
 ## SDK limits
 

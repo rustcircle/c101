@@ -331,8 +331,9 @@ Every body implements the protocol of
 - never spawn the agent type named in `parent` (loop guard), and keep context lean
   ([File offloading](delegation.md#file-offloading), [Context-first policy](delegation.md#context-first-policy));
 - return the five-section [Output contract](delegation.md#output-contract) and send uncertainty up as Open doubts
-  ([Doubt escalation](delegation.md#doubt-escalation)); irreversible actions (push, publish, delete, send, payments) are never
-  performed, and subagents never call AskUserQuestion.
+  ([Doubt escalation](delegation.md#doubt-escalation)); irreversible actions (publish, delete, send, payments) are never
+  performed, a `git push` only when the user asked for it and approves the hook's prompt, and subagents never
+  call AskUserQuestion.
 
 ## The visual-reviewer agent
 

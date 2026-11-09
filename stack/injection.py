@@ -9,8 +9,9 @@ Stdlib only: it runs inside hooks on every web-tool result and every risky tool 
 * ``risky_action(tool, tool_input, project_dir)`` names what a tool call would do that an
   injected instruction could abuse (network egress or pipe-to-shell in Bash, secret reads,
   git push, registry pushes, writes outside ``.stack/``, typing into web forms), or returns None.
-* ``outward_bash(cmd, ...)`` names a registry write or a change to a non-local Kubernetes cluster; the
-  pre-tool hook asks the user before any agent runs one (``config/policy.json`` ``outward_actions``).
+* ``outward_bash(cmd, ...)`` names a git push (force/delete pushes flagged as destructive), a registry write
+  or a change to a non-local Kubernetes cluster; the pre-tool hook asks the user before any agent runs one
+  (``config/policy.json`` ``outward_actions``).
 * Taint state (``mark`` / ``taint_of``): which agents in a session have ingested flagged
   content, kept in ``<data>/sessions/<session>.taint.json``.
 
@@ -199,9 +200,10 @@ def risky_bash(cmd: str) -> Optional[str]:
         return "network egress from Bash (%s)" % next(h for h in heads if h in EGRESS_CMDS)
     if any(w[0] in INTERPRETERS for w in segs) and _INLINE_NET.search(cmd):
         return "network access from an inline interpreter"
-    if any(w[0] == "git" and len(w) > 1 and (w[1] == "push" or (w[1] == "remote" and len(w) > 2 and w[2] in ("add", "set-url")))
-           for w in segs):
-        return "git push / remote change"
+    for w in segs:
+        sub, args = _git_sub(w)
+        if sub == "push" or (sub == "remote" and args[:1] and args[0] in ("add", "set-url")):
+            return "git push / remote change"
     if _SECRET_PATH.search(cmd) or any(w[0] in ("printenv",) or (w[0] in ("env", "set", "export") and len(w) == 1)
                                        for w in segs):
         return "reading credentials or environment secrets"
@@ -349,9 +351,82 @@ def _kube_context(w: List[str], cmd: str, project_dir: str, env: Dict[str, str])
         else "(no current-context)"
 
 
+# --- git push: approved by the user, never on an agent's own judgment ---------------------------------
+# Global options of `git` that take a separate value, so `git -C repo push` is still seen as a push.
+_GIT_VALUE_OPTS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--super-prefix", "--config-env",
+                   "--attr-source"}
+_GIT_PUSH_VALUE_OPTS = {"--repo", "--receive-pack", "--exec", "--push-option"}
+_GIT_PUSH_DESTRUCTIVE = {"--force", "--force-with-lease", "--force-if-includes", "--delete", "--mirror", "--prune"}
+
+
+def _git_sub(w: List[str]):
+    """(subcommand, its arguments) of a git invocation, skipping git's global options; (None, []) otherwise."""
+    if not w or w[0] != "git":
+        return None, []
+    i = 1
+    while i < len(w):
+        a = w[i]
+        if a in _GIT_VALUE_OPTS:
+            i += 2
+        elif a.startswith("-"):
+            i += 1
+        else:
+            return a, w[i + 1:]
+    return None, []
+
+
+def git_push(w: List[str]) -> Optional[str]:
+    """Why this command word list is a git push that needs the user's approval, or None.
+    Dry runs change nothing and pass; force, delete, mirror and prune pushes are named as destructive."""
+    sub, args = _git_sub(w)
+    if sub != "push":
+        return None
+    bad, pos, dry, i = [], [], False, 0
+    while i < len(args):
+        a = args[i]
+        if a == "--":
+            pos += args[i + 1:]
+            break
+        if a.startswith("--"):
+            name = a.split("=", 1)[0]
+            if name in _GIT_PUSH_DESTRUCTIVE:
+                bad.append(name)
+            elif name == "--dry-run":
+                dry = True
+            i += 2 if (name in _GIT_PUSH_VALUE_OPTS and "=" not in a) else 1
+            continue
+        if a.startswith("-") and len(a) > 1:
+            step = 1
+            for j, ch in enumerate(a[1:]):
+                if ch == "f":
+                    bad.append("-f")
+                elif ch == "d":
+                    bad.append("-d")
+                elif ch == "n":
+                    dry = True
+                elif ch == "o":  # -o <push-option>, or -ovalue
+                    step = 2 if j == len(a) - 2 else 1
+                    break
+            i += step
+            continue
+        pos.append(a)
+        i += 1
+    for ref in pos[1:]:  # pos[0] is the remote
+        if ref.startswith("+"):
+            bad.append("+%s (forced refspec)" % ref[1:])
+        elif ref.startswith(":") and len(ref) > 1:
+            bad.append("%s (deletes the remote ref)" % ref)
+    if dry:
+        return None
+    if bad:
+        return ("DESTRUCTIVE git push (%s): it can overwrite or delete commits, branches or tags on the remote "
+                "for good" % ", ".join(dict.fromkeys(bad)))
+    return "git push (publishes commits to a remote)"
+
+
 def outward_bash(cmd: str, project_dir: str = ".", env: Optional[Dict[str, str]] = None,
                  local_contexts=LOCAL_KUBE_CONTEXTS) -> Optional[str]:
-    """Why this Bash command writes to a registry or changes a non-local cluster, or None."""
+    """Why this Bash command pushes to a git remote, writes to a registry or changes a non-local cluster, or None."""
     env = os.environ if env is None else env
     for w in _segments(cmd):
         if w[0] in SHELLS and "-c" in w[1:]:
@@ -359,7 +434,7 @@ def outward_bash(cmd: str, project_dir: str = ".", env: Optional[Dict[str, str]]
             why = outward_bash(inner, project_dir, env, local_contexts) if inner and inner != cmd else None
             if why:
                 return why
-        why = _registry_write(w)
+        why = _registry_write(w) or git_push(w)
         if why:
             return why
         verb = _kube_write(w)

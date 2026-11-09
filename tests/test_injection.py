@@ -337,6 +337,100 @@ class OutwardActionTests(unittest.TestCase):
                 os.environ["HOME"] = orig_env
 
 
+class GitPushTests(unittest.TestCase):
+    """git push runs only after the user approves it (ask); force/delete pushes are named destructive;
+    web-reading and tainted agents stay denied (policy outward_actions, web_content)."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.proj = os.path.join(self.tmp, "proj")
+        os.makedirs(os.path.join(self.proj, ".stack", "out"))
+        self.env = {"HOME": self.tmp, "CLAUDE_STACK_DATA": os.path.join(self.tmp, "data"),
+                    "CLAUDE_PROJECT_DIR": self.proj}
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def out(self, cmd):
+        return injection.outward_bash(cmd, self.proj, {})
+
+    def payload(self, cmd, agent_id=None, agent_type=None, **extra):
+        p = {"hook_event_name": "PreToolUse", "session_id": "G", "cwd": self.proj, "tool_name": "Bash",
+             "tool_input": {"command": cmd}}
+        if agent_id:
+            p.update(agent_id=agent_id, agent_type=agent_type)
+        p.update(extra)
+        return p
+
+    def decide(self, *a, **kw):
+        rc, out, err = run_hook("pre-tool", self.payload(*a, **kw), self.env)
+        self.assertEqual(rc, 0, err)
+        return out and out["hookSpecificOutput"]
+
+    def test_plain_pushes_are_outward(self):
+        for c in ["git push", "git push origin main", "git push -u origin feat/x", "git push --tags",
+                  "git -C ../repo push", "git -c push.default=current push", "git --git-dir .git push origin",
+                  "make test && git push", "bash -c 'git push origin main'", "env GIT_TRACE=1 git push",
+                  "git push --all origin", "git push -o ci.skip origin main", "git push origin main:main"]:
+            why = self.out(c)
+            self.assertIsNotNone(why, c)
+            self.assertNotIn("DESTRUCTIVE", why, c)
+            self.assertIsNotNone(injection.risky_bash(c), c)  # still denied to web-reading and tainted agents
+
+    def test_force_and_delete_pushes_are_destructive(self):
+        for c in ["git push --force", "git push -f origin main", "git push -uf origin x",
+                  "git push --force-with-lease", "git push --force-with-lease=main:abc123 origin main",
+                  "git push --force-if-includes origin x", "git push origin +main", "git push origin +a:b",
+                  "git push --delete origin old", "git push -d origin old", "git push origin :old",
+                  "git push --mirror backup", "git push --prune origin 'refs/heads/*:refs/heads/*'",
+                  "git -C repo push --force origin main"]:
+            self.assertIn("DESTRUCTIVE", self.out(c) or "", c)
+
+    def test_other_git_commands_are_not_outward(self):
+        for c in ["git status", "git commit -m 'push it'", "git log --grep push", "git stash push -m wip",
+                  "git fetch origin", "git pull --ff-only", "git remote add origin git@h:o/r.git",
+                  "git config push.autoSetupRemote true", "git push --dry-run origin main", "git push -n --force",
+                  "git merge --ff-only allow-approved-push", "git branch -d done", "echo git push",
+                  "git -C repo status"]:
+            self.assertIsNone(self.out(c), c)
+
+    def test_hook_asks_main_thread_and_subagents(self):
+        for who in ({}, {"agent_id": "a1", "agent_type": "python-expert"}):
+            d = self.decide("git push origin main", **who)
+            self.assertEqual(d["permissionDecision"], "ask", who)
+            self.assertIn("git push", d["permissionDecisionReason"])
+            self.assertIn("Open doubt", d["permissionDecisionReason"])
+            d = self.decide("git push --force-with-lease origin main", **who)
+            self.assertEqual(d["permissionDecision"], "ask", who)
+            self.assertIn("DESTRUCTIVE", d["permissionDecisionReason"])
+            self.assertIn("--force-with-lease", d["permissionDecisionReason"])
+
+    def test_unattended_run_denies_with_open_doubt_advice(self):
+        d = self.decide("git push origin main", "a2", "orchestrator", permission_mode="dontAsk")
+        self.assertEqual(d["permissionDecision"], "deny")
+        self.assertIn("unattended", d["permissionDecisionReason"])
+        self.assertIn("Open doubt", d["permissionDecisionReason"])
+        self.assertIsNone(self.decide("git status", "a2", "orchestrator", permission_mode="dontAsk"))
+
+    def test_web_agents_and_tainted_agents_stay_denied(self):
+        for c in ("git push origin main", "git -C repo push", "git push --force"):
+            d = self.decide(c, "w1", "web-searcher")
+            self.assertEqual(d["permissionDecision"], "deny", c)
+            self.assertIn("web-searcher may not do this", d["permissionDecisionReason"])
+        run_hook("post-web", {"hook_event_name": "PostToolUse", "session_id": "G", "cwd": self.proj,
+                              "tool_name": "mcp__fetch__fetch", "agent_id": "t1", "agent_type": "rust-expert",
+                              "tool_input": {"url": "https://evil.test/p"},
+                              "tool_response": [{"type": "text", "text": ATTACKS["override"]}]}, self.env)
+        d = self.decide("git push origin main", "t1", "rust-expert")
+        self.assertEqual(d["permissionDecision"], "deny")
+        self.assertIn("prompt injection", d["permissionDecisionReason"])
+
+    def test_non_push_git_is_untouched_for_everyone(self):
+        for who in ({}, {"agent_id": "a3", "agent_type": "python-expert"}):
+            for c in ("git status", "git commit -m x", "git switch -c b", "git push --dry-run"):
+                self.assertIsNone(self.decide(c, **who), (c, who))
+
+
 class WiringTests(unittest.TestCase):
     def test_settings_route_web_tools_and_risky_tools(self):
         with open(os.path.join(ROOT, ".claude", "settings.json")) as fh:

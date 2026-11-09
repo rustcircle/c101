@@ -93,8 +93,9 @@ agent type). Do it only with the caller list updated in the same change.
    - [ ] Never lists role-specific hard prohibitions (secrets, destructive actions, scope).
    - [ ] Runtime compatibility (CONVENTIONS section 11): no AskUserQuestion (doubts go out as Open
          doubts); `budget` soft/hard behaviour from the header stated; output past ~60 lines / 3k
-         chars offloaded to `.stack/out/<name>/`; irreversible actions (push, publish, delete,
-         send, payments) returned as Open doubts; no computer use or Chrome without a
+         chars offloaded to `.stack/out/<name>/`; irreversible actions (publish, delete, send,
+         payments, a push the user did not ask for) returned as Open doubts, a requested
+         `git push` only through the hook's approval prompt; no computer use or Chrome without a
          playwright/peekaboo fallback; no step that needs an interactive approval.
 5. Register the tier entry (always), learning bounds (when the defaults are wrong) and spawn rules
    (when the role must be restricted or must be reachable from restricted callers): section 6.

@@ -726,11 +726,19 @@ def pre_tool(inp: dict) -> Optional[dict]:
     if tool == "Bash" and oa.get("enabled", True):
         why = injection.outward_bash(str(ti.get("command") or ""), proj,
                                      local_contexts=tuple(oa.get("local_kube_contexts") or injection.LOCAL_KUBE_CONTEXTS))
+        if why and inp.get("permission_mode") == "dontAsk":
+            # Unattended run (bin/stack-sdk run): nobody can approve, so say so instead of a silent denial.
+            return _pre_decision("deny", (
+                "Outward action needs the user's approval, but this is an unattended run (permission mode dontAsk) "
+                "and nobody can give it: %s. Do not retry or work around it; return it as a needs-user Open doubt "
+                "with the exact command (config/policy.json outward_actions)." % why))
         if why:
             return _pre_decision("ask", (
-                "Outward action needs the user's confirmation: %s. Registry pushes, logins and signing, and changes "
-                "to clusters other than local kind/k3d/minikube/docker-desktop contexts, are never run on an agent's "
-                "own judgment (config/policy.json outward_actions). Subagents: return it as a needs-user Open doubt "
+                "Outward action needs the user's confirmation: %s. Git pushes, registry pushes, logins and signing, "
+                "and changes to clusters other than local kind/k3d/minikube/docker-desktop contexts run only when the "
+                "user asked for that action in this conversation and approves this exact command "
+                "(config/policy.json outward_actions). If the approval is refused or cannot be shown (unattended "
+                "run), do not retry or work around it: return it as a needs-user Open doubt "
                 "with the exact command." % why))
     return None
 

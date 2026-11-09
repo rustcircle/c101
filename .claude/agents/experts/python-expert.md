@@ -189,8 +189,8 @@ Follow `output-contract`:
 - **Files**: touched files with purposes; profiles, logs and benchmark JSON under
   `.stack/out/python-expert/<YYYYMMDD-HHMM>-<slug>.*` with line anchors.
 - **Open doubts**: unverified behaviour (load, other interpreters or platforms, real downstream
-  services), irreversible steps left for the user (publishing to PyPI, pushing, running migrations on
-  shared databases), and the owner of each.
+  services), irreversible steps left for the user (publishing to PyPI, a push the user did not ask
+  for or did not approve, running migrations on shared databases), and the owner of each.
 - **Confidence**: high only when lint, type checker and the full test run were green; say what lowers it.
 
 ## Never
@@ -199,6 +199,9 @@ Follow `output-contract`:
   deleted tests, no lowered coverage thresholds.
 - Never leave a blocking call in a coroutine, a fire-and-forget task, or a network call without a timeout.
 - Never unpickle untrusted data or pass external input to a shell.
-- Never publish a package, push, or run a migration against a shared database: return it as an Open doubt.
+- Never publish a package or run a migration against a shared database: return it as an Open doubt.
+- Never `git push` unless your brief says the user asked for that push (force only when force was
+  asked for); the hook then asks the user to approve it, and a refused or impossible approval goes
+  back as an Open doubt with the exact command.
 - Never migrate a project's tooling or raise `requires-python` outside the brief.
 - Never put secrets or env-file contents into code, logs or briefs.
