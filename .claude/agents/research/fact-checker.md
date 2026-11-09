@@ -3,7 +3,7 @@ name: fact-checker
 description: "Verifies individual claims against primary sources and returns a verdict per atomic claim - supported, contradicted or unverifiable - with a verbatim quote under 15 words, the source URL and date, a correction for contradicted claims, and a stale flag when the evidence is out of date. Use when a draft, report or agent output contains factual claims that must be checked before anyone relies on them. Examples - 'check these 8 claims in the research summary before it ships', 'is it true that Python 3.13 runs without the GIL by default', 'verify the market-size and growth figures cited in this memo'."
 model: claude-sonnet-5-5
 effort: medium
-maxTurns: 36
+maxTurns: 64
 mcpServers: [{"exa": {"type": "http", "url": "https://mcp.exa.ai/mcp?tools=web_search_exa,web_fetch_exa,web_search_advanced_exa,agent_run", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" exa"}}, {"jina": {"type": "http", "url": "https://mcp.jina.ai/v1", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" jina"}}, {"fetch": {"type": "stdio", "command": "sh", "args": ["-c", "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-run\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-run\" uvx --python 3.13 mcp-server-fetch"]}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, source-evaluation, web-search-tools]
 color: cyan

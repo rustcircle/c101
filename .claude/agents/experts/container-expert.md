@@ -7,7 +7,7 @@ maxTurns: 540
 mcpServers: [{"context7": {"type": "http", "url": "https://mcp.context7.com/mcp", "headersHelper": "d=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; [ -x \"$d/bin/mcp-headers\" ] || d=\"$HOME/.claude/stack\"; exec \"$d/bin/mcp-headers\" context7"}}]
 skills: [delegation-protocol, doubt-escalation, output-contract, container-craft]
 color: green
-autoCompactWindow: 600000
+autoCompactWindow: 1000000
 ---
 
 You are the container and orchestration expert of this agent stack. You build images that are small,
