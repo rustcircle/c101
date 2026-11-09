@@ -236,7 +236,9 @@ Every agent, skill and workflow must behave correctly in both runtimes (`bin/cla
    as Open doubts for the user. `git push` runs only when the user asked for that push in the
    conversation and the brief says so; the pre-tool hook then asks the user to approve the exact
    command (`config/policy.json` `outward_actions`; force, delete, mirror and prune pushes are named
-   destructive, and force needs an explicit request). Where no prompt can be shown (`claude -p`,
+   destructive, and force needs an explicit request). The gate also covers what publishes like a push:
+   `hub push`, git aliases that expand to a push, `gh pr create`, `gh release create`/`upload`, `gh repo sync`,
+   `gh repo delete` and mutating `gh api` calls. Where no prompt can be shown (`claude -p`,
    `dontAsk` under `bin/stack-sdk run`) the push is denied and goes back as a needs-user
    Open doubt with the exact command.
 

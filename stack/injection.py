@@ -26,6 +26,8 @@ import hashlib
 import json
 import os
 import re
+import shlex
+import subprocess
 import time
 import unicodedata
 from typing import Any, Dict, List, NamedTuple, Optional
@@ -157,12 +159,36 @@ _ASSIGN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 _DURATION = re.compile(r"^\d+(\.\d+)?[smhd]?$")
 
 
+_SHELL_KEYWORDS = {"then", "do", "else", "elif", "if", "while", "until", "!", "{", "("}
+
+
+def _strip_shell_syntax(seg: str) -> List[str]:
+    """Words of one segment without the shell syntax around the command: leading ``then``/``do``/``else``/
+    ``if``/``while``, ``(`` and ``{`` groupers, and the ``)`` that closes ``(cmd)`` or ``$(cmd)``."""
+    words = seg.strip().split()
+    while words:
+        head = words[0]
+        if head in _SHELL_KEYWORDS:
+            words = words[1:]
+        elif head[0] in "({":
+            words[0] = head.lstrip("({")
+            if not words[0]:
+                words = words[1:]
+        else:
+            break
+    if words and words[-1].endswith(")") and " ".join(words).count(")") > " ".join(words).count("("):
+        words[-1] = words[-1].rstrip(")")
+        if not words[-1]:
+            words.pop()
+    return words
+
+
 def _segments(cmd: str) -> List[List[str]]:
     """Command words of each pipeline/list segment; wrappers (sudo, env, timeout...), their options
     and VAR=value assignments are skipped so the head is the program that actually runs."""
     out = []
     for seg in _SEGMENT_SPLIT.split(cmd):
-        words = seg.strip().split()
+        words = _strip_shell_syntax(seg)
         i = 0
         while i < len(words):
             w = words[i]
@@ -181,8 +207,9 @@ def _segments(cmd: str) -> List[List[str]]:
     return out
 
 
-def risky_bash(cmd: str) -> Optional[str]:
+def risky_bash(cmd: str, project_dir: str = ".", _depth: int = 0) -> Optional[str]:
     segs = _segments(cmd)
+    res = _Aliases(project_dir, os.environ, _depth)
     heads = [w[0] for w in segs]
     # pipe into a shell, or into an interpreter reading its program from stdin
     for i, w in enumerate(segs[1:], 1):
@@ -191,7 +218,7 @@ def risky_bash(cmd: str) -> Optional[str]:
     for w in segs:
         if w[0] in SHELLS and "-c" in w[1:]:
             inner = " ".join(w[w.index("-c") + 1:]).strip().strip("'\"")
-            why = risky_bash(inner) if inner and inner != cmd else None
+            why = risky_bash(inner, project_dir, _depth) if inner and inner != cmd else None
             if why:
                 return why + " (inside %s -c)" % w[0]
         if w[0] == "eval":
@@ -202,7 +229,7 @@ def risky_bash(cmd: str) -> Optional[str]:
         return "network access from an inline interpreter"
     for w in segs:
         sub, args = _git_sub(w)
-        if sub == "push" or (sub == "remote" and args[:1] and args[0] in ("add", "set-url")):
+        if sub == "push" or (sub == "remote" and args[:1] and args[0] in ("add", "set-url")) or remote_write(w, res):
             return "git push / remote change"
     if _SECRET_PATH.search(cmd) or any(w[0] in ("printenv",) or (w[0] in ("env", "set", "export") and len(w) == 1)
                                        for w in segs):
@@ -351,18 +378,39 @@ def _kube_context(w: List[str], cmd: str, project_dir: str, env: Dict[str, str])
         else "(no current-context)"
 
 
-# --- git push: approved by the user, never on an agent's own judgment ---------------------------------
+# --- remote writes: git push and its look-alikes, approved by the user, never on an agent's own judgment ----------
 # Global options of `git` that take a separate value, so `git -C repo push` is still seen as a push.
 _GIT_VALUE_OPTS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--super-prefix", "--config-env",
                    "--attr-source"}
 _GIT_PUSH_VALUE_OPTS = {"--repo", "--receive-pack", "--exec", "--push-option"}
 _GIT_PUSH_DESTRUCTIVE = {"--force", "--force-with-lease", "--force-if-includes", "--delete", "--mirror", "--prune"}
+# `hub` is a git wrapper: same global options, same subcommands, same push semantics.
+_GIT_WRAPPERS = {"git", "hub"}
+# Plumbing commands that publish refs exactly like push (they take push's flags).
+_GIT_PUSH_COMMANDS = {"push", "send-pack", "http-push"}
+# Built-in git subcommands (git ignores an alias with one of these names), so no alias lookup for them.
+_GIT_BUILTINS = frozenset("""add am annotate apply archive bisect blame branch bundle cat-file check-attr check-ignore
+    check-ref-format checkout cherry cherry-pick citool clean clone column commit commit-tree config count-objects
+    credential describe diagnose diff diff-index diff-tree difftool fast-export fast-import fetch fetch-pack
+    filter-branch for-each-ref format-patch fsck gc get-tar-commit-id gitk grep gui hash-object help hook init
+    instaweb interpret-trailers log ls-files ls-remote ls-tree maintenance mailinfo mailsplit merge merge-base
+    merge-file merge-index merge-tree mergetool multi-pack-index mv name-rev notes pack-objects pack-refs patch-id
+    prune prune-packed pull range-diff read-tree rebase receive-pack reflog remote repack replace request-pull
+    rerere reset restore rev-list rev-parse revert rm scalar send-email shortlog show show-branch show-ref
+    sparse-checkout stash status stripspace submodule switch symbolic-ref tag unpack-file unpack-objects
+    update-index update-ref upload-archive upload-pack var verify-commit verify-pack verify-tag version
+    whatchanged worktree write-tree""".split()) | _GIT_PUSH_COMMANDS
+_ALIAS_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*\Z")
+_ALIAS_TIMEOUT = 1.5      # seconds per `git config` call (the pre-tool hook has 10 s in total)
+_ALIAS_LOOKUPS = 4        # lookups per Bash command
+_ALIAS_DEPTH = 3          # alias -> alias -> shell alias nesting
+_GIT_IN_SHELL = re.compile(r"(?<![\w./-])(?:git|hub|gh)(?=\s)")
 
 
-def _git_sub(w: List[str]):
-    """(subcommand, its arguments) of a git invocation, skipping git's global options; (None, []) otherwise."""
-    if not w or w[0] != "git":
-        return None, []
+def _git_idx(w: List[str]) -> Optional[int]:
+    """Index of the subcommand in a git/hub invocation, skipping the global options; None if there is none."""
+    if not w or w[0] not in _GIT_WRAPPERS:
+        return None
     i = 1
     while i < len(w):
         a = w[i]
@@ -371,16 +419,89 @@ def _git_sub(w: List[str]):
         elif a.startswith("-"):
             i += 1
         else:
-            return a, w[i + 1:]
-    return None, []
+            return i
+    return None
 
 
-def git_push(w: List[str]) -> Optional[str]:
-    """Why this command word list is a git push that needs the user's approval, or None.
-    Dry runs change nothing and pass; force, delete, mirror and prune pushes are named as destructive."""
-    sub, args = _git_sub(w)
-    if sub != "push":
+def _git_sub(w: List[str]):
+    """(subcommand, its arguments) of a git (or hub) invocation, skipping git's global options; (None, []) otherwise."""
+    i = _git_idx(w)
+    return (None, []) if i is None else (w[i], w[i + 1:])
+
+
+class _Aliases:
+    """Resolves git aliases for the push check. Every failure (no git, no repo, timeout, odd value) means
+    "unknown", which never blocks; lookups and nesting are bounded so a hook cannot hang or recurse."""
+
+    def __init__(self, cwd: str, env: Dict[str, str], depth: int = 0, budget: Optional[List[int]] = None):
+        self.cwd, self.env, self.depth = cwd, env, depth
+        self.budget = [_ALIAS_LOOKUPS] if budget is None else budget
+
+    def nested(self) -> "_Aliases":
+        return _Aliases(self.cwd, self.env, self.depth + 1, self.budget)
+
+    def lookup(self, w: List[str], idx: int) -> Optional[str]:
+        """Value of alias ``w[idx]``: an inline ``-c alias.x=...`` first, else ``git config --get alias.x`` run with
+        the command's own -C / --git-dir / --work-tree so the repository it would run in is the one asked."""
+        name = w[idx]
+        if self.depth >= _ALIAS_DEPTH or not _ALIAS_NAME.match(name):
+            return None
+        scope: List[str] = []
+        inline = None
+        i = 1
+        while i < idx:
+            a = w[i]
+            if a in ("-C", "--git-dir", "--work-tree") and i + 1 < idx:
+                scope += [a, w[i + 1]]
+            elif a == "-c" and i + 1 < idx and w[i + 1].lower().startswith("alias.%s=" % name.lower()):
+                inline = w[i + 1].split("=", 1)[1]
+            elif a.startswith(("--git-dir=", "--work-tree=")):
+                scope.append(a)
+            i += 2 if a in _GIT_VALUE_OPTS else 1
+        if inline is not None:
+            return inline or None
+        if self.budget[0] <= 0:
+            return None
+        self.budget[0] -= 1
+        try:
+            done = subprocess.run(["git", *scope, "config", "--get", "alias." + name], cwd=self.cwd,
+                                  env={**os.environ, **self.env}, stdin=subprocess.DEVNULL, capture_output=True,
+                                  text=True, errors="replace", timeout=_ALIAS_TIMEOUT, check=False)
+        except (OSError, subprocess.SubprocessError, ValueError):
+            return None
+        return done.stdout.strip() or None if done.returncode == 0 else None
+
+
+def _alias_remote_write(w: List[str], idx: int, res: "_Aliases") -> Optional[str]:
+    """Reason when git alias ``w[idx]`` expands to a push (``push ...``, an alias of one, or a ``!`` shell command)."""
+    val = res.lookup(w, idx)
+    if not val:
         return None
+    if val.startswith("!"):
+        shell = val[1:].strip()
+        found = outward_bash(shell, res.cwd, res.env, _depth=res.depth + 1)
+        for m in _GIT_IN_SHELL.finditer(shell):  # function bodies: f() { git push "$@"; }; f
+            found = found or outward_bash(shell[m.start():], res.cwd, res.env, _depth=res.depth + 1)
+        why = found
+    else:
+        try:
+            expanded = shlex.split(val)
+        except ValueError:
+            return None
+        why = remote_write(w[:idx] + expanded + w[idx + 1:], res.nested()) if expanded else None
+    return "%s [git alias '%s' = '%s']" % (why, w[idx], val) if why else None
+
+
+def git_push(w: List[str], res: Optional["_Aliases"] = None) -> Optional[str]:
+    """Why this command word list is a git push that needs the user's approval, or None. Dry runs change nothing
+    and pass; force, delete, mirror and prune pushes are named as destructive. With ``res``, an unknown subcommand
+    is resolved as a git alias and judged by what it expands to."""
+    idx = _git_idx(w)
+    if idx is None:
+        return None
+    sub, args = w[idx], w[idx + 1:]
+    if sub not in _GIT_PUSH_COMMANDS:
+        return None if res is None or sub in _GIT_BUILTINS else _alias_remote_write(w, idx, res)
     bad, pos, dry, i = [], [], False, 0
     while i < len(args):
         a = args[i]
@@ -424,17 +545,105 @@ def git_push(w: List[str]) -> Optional[str]:
     return "git push (publishes commits to a remote)"
 
 
+_GH_VALUE_FLAGS = {"-R", "--repo", "-b", "--branch", "-s", "--source", "-t", "--title", "-n", "--notes", "-F",
+                   "--notes-file", "-d", "--discussion-category", "--target", "--hostname", "-q", "--jq", "-H",
+                   "--header", "-X", "--method", "-f", "--raw-field", "--field", "--input", "--template", "-T"}
+_GH_BODY_FLAGS = {"-f", "-F", "--raw-field", "--field", "--input"}  # gh api switches to POST when any is given
+_GH_WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+def _gh_positional(words: List[str]) -> List[str]:
+    out, i = [], 0
+    while i < len(words):
+        a = words[i]
+        if a.startswith("-"):
+            i += 2 if (a in _GH_VALUE_FLAGS and "=" not in a) else 1
+        else:
+            out.append(a)
+            i += 1
+    return out
+
+
+def _gh_api_method(words: List[str]) -> str:
+    method, has_body = None, False
+    for i, a in enumerate(words):
+        if a in ("-X", "--method") and i + 1 < len(words):
+            method = words[i + 1]
+        elif a.startswith("--method="):
+            method = a.split("=", 1)[1]
+        elif a.startswith("-X") and len(a) > 2:
+            method = a[2:]
+        elif a.split("=", 1)[0] in _GH_BODY_FLAGS or (a[:2] in ("-f", "-F") and len(a) > 2 and not a.startswith("--")):
+            has_body = True
+    return (method or ("POST" if has_body else "GET")).upper()
+
+
+def gh_remote_write(w: List[str]) -> Optional[str]:
+    """Why this gh invocation changes a GitHub remote (publishes a branch, release or API write), or None.
+    Read-only commands (pr view/list/status/diff/checks, run view, api GET ...) pass.
+    ``gh pr create --dry-run`` is still flagged: gh documents that it "may still push git changes"."""
+    if not w or w[0] != "gh":
+        return None
+    words = w[1:]
+    pos = _gh_positional(words)
+    group, verb = (pos + ["", ""])[:2]
+    if group == "api":
+        if any(a == "graphql" or a.endswith("/graphql") for a in words):  # POSTs even for reads: only mutations count
+            return ("gh api graphql mutation (writes to GitHub)"
+                    if re.search(r"\bmutation\b", " ".join(words), re.I) else None)
+        method = _gh_api_method(words)
+        if method == "DELETE":
+            return "DESTRUCTIVE gh api DELETE: it deletes the resource on GitHub for good"
+        return "gh api %s (writes to GitHub)" % method if method in _GH_WRITE_METHODS else None
+    if (group, verb) == ("pr", "create"):
+        return "gh pr create (pushes the current branch if needed and publishes a pull request)"
+    if (group, verb) == ("repo", "sync"):
+        if "--force" in words:
+            return ("DESTRUCTIVE gh repo sync --force: it hard-resets the branch to the source repository and "
+                    "discards commits that are not in it")
+        # without a destination argument gh syncs the local checkout, which publishes nothing
+        return "gh repo sync (updates a branch of a remote repository)" if len(pos) > 2 else None
+    if (group, verb) == ("repo", "delete"):
+        return "DESTRUCTIVE gh repo delete: it deletes the repository on GitHub for good"
+    if (group, verb) == ("repo", "create") and "--push" in words:
+        return "gh repo create --push (publishes the local commits to a new remote repository)"
+    if group == "release":
+        if verb in ("delete", "delete-asset"):
+            return "DESTRUCTIVE gh release %s: it deletes release data (and with --cleanup-tag the tag) on GitHub" % verb
+        if verb in ("create", "upload", "edit"):
+            return "gh release %s (publishes to GitHub; create also pushes the tag)" % verb
+    return None
+
+
+def hub_remote_write(w: List[str]) -> Optional[str]:
+    """hub's own publishing commands (hub push is judged by git_push, hub being a git wrapper)."""
+    sub, args = _git_sub(w) if w and w[0] == "hub" else (None, [])
+    if sub == "pull-request":
+        return "hub pull-request (pushes the current branch if needed and publishes a pull request)"
+    if sub == "release" and args[:1] in (["create"], ["edit"]):
+        return "hub release %s (publishes to GitHub)" % args[0]
+    if sub == "release" and args[:1] == ["delete"]:
+        return "DESTRUCTIVE hub release delete: it deletes the release on GitHub for good"
+    return None
+
+
+def remote_write(w: List[str], res: Optional["_Aliases"] = None) -> Optional[str]:
+    """Why this command changes a git/GitHub remote (git or hub push, gh/hub publishing, push aliases), or None."""
+    return git_push(w, res) or gh_remote_write(w) or hub_remote_write(w)
+
+
 def outward_bash(cmd: str, project_dir: str = ".", env: Optional[Dict[str, str]] = None,
-                 local_contexts=LOCAL_KUBE_CONTEXTS) -> Optional[str]:
+                 local_contexts=LOCAL_KUBE_CONTEXTS, _depth: int = 0) -> Optional[str]:
     """Why this Bash command pushes to a git remote, writes to a registry or changes a non-local cluster, or None."""
     env = os.environ if env is None else env
+    res = _Aliases(project_dir, env, _depth)
     for w in _segments(cmd):
         if w[0] in SHELLS and "-c" in w[1:]:
             inner = " ".join(w[w.index("-c") + 1:]).strip().strip("'\"")
-            why = outward_bash(inner, project_dir, env, local_contexts) if inner and inner != cmd else None
+            why = outward_bash(inner, project_dir, env, local_contexts, _depth) if inner and inner != cmd else None
             if why:
                 return why
-        why = _registry_write(w) or git_push(w)
+        why = _registry_write(w) or remote_write(w, res)
         if why:
             return why
         verb = _kube_write(w)
@@ -471,7 +680,7 @@ def under_root(path: str, project_dir: str, root: str = ".stack") -> bool:
 def risky_action(tool: str, tool_input: dict, project_dir: str, write_root: str = ".stack") -> Optional[str]:
     tool_input = tool_input or {}
     if tool == "Bash":
-        return risky_bash(str(tool_input.get("command") or ""))
+        return risky_bash(str(tool_input.get("command") or ""), project_dir)
     if tool in WRITE_TOOLS:
         path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
         if not under_root(str(path), project_dir, write_root):

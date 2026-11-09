@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -337,9 +338,8 @@ class OutwardActionTests(unittest.TestCase):
                 os.environ["HOME"] = orig_env
 
 
-class GitPushTests(unittest.TestCase):
-    """git push runs only after the user approves it (ask); force/delete pushes are named destructive;
-    web-reading and tainted agents stay denied (policy outward_actions, web_content)."""
+class _GateCase(unittest.TestCase):
+    """Shared fixtures for the outward-action gate tests: a project dir, a hook env, and out()/decide()."""
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
@@ -366,6 +366,11 @@ class GitPushTests(unittest.TestCase):
         rc, out, err = run_hook("pre-tool", self.payload(*a, **kw), self.env)
         self.assertEqual(rc, 0, err)
         return out and out["hookSpecificOutput"]
+
+
+class GitPushTests(_GateCase):
+    """git push runs only after the user approves it (ask); force/delete pushes are named destructive;
+    web-reading and tainted agents stay denied (policy outward_actions, web_content)."""
 
     def test_plain_pushes_are_outward(self):
         for c in ["git push", "git push origin main", "git push -u origin feat/x", "git push --tags",
@@ -429,6 +434,184 @@ class GitPushTests(unittest.TestCase):
         for who in ({}, {"agent_id": "a3", "agent_type": "python-expert"}):
             for c in ("git status", "git commit -m x", "git switch -c b", "git push --dry-run"):
                 self.assertIsNone(self.decide(c, **who), (c, who))
+
+
+class RemoteWriteTests(_GateCase):
+    """Pushes that do not spell `git push`: gh and hub publishing, git aliases, and chained or wrapped forms.
+    Same gate: ask for everyone, deny under dontAsk and for web/tainted agents, read-only commands untouched."""
+
+    PUBLISH = ["gh pr create", "gh pr create --fill --base main", "gh pr create --dry-run", "gh -R o/r pr create -t x",
+               "gh repo sync owner/fork", "gh repo sync owner/fork -b v1", "gh release create v1 dist/a.zip",
+               "gh release upload v1 a.zip", "gh release edit v1 --draft=false",
+               "gh repo create x --source . --push",
+               "gh api -X POST repos/o/r/issues -f title=x", "gh api repos/o/r/issues -f title=x",
+               "gh api --method PATCH repos/o/r/issues/1 -F state=closed", "gh api -XPUT repos/o/r/topics",
+               "gh api graphql -f query='mutation { addStar(input: {starrableId: \"x\"}) { clientMutationId } }'",
+               "hub push origin main", "hub -C ../r push", "hub pull-request -m x", "hub release create v1"]
+    DESTRUCTIVE = ["gh repo sync --force", "gh repo sync o/r --force", "gh repo delete o/r --yes",
+                   "gh release delete v1", "gh release delete-asset v1 a.zip", "gh api -X DELETE repos/o/r/issues/1",
+                   "gh api --method=DELETE repos/o/r", "hub push --force origin main", "hub release delete v1"]
+    READ_ONLY = ["gh pr view 1", "gh pr list", "gh pr status", "gh pr diff 3", "gh pr checks", "gh pr checkout 3",
+                 "gh run view 1", "gh run list", "gh repo view", "gh repo clone o/r", "gh repo sync",
+                 "gh repo sync --branch v1", "gh release list", "gh release view v1", "gh release download v1",
+                 "gh issue list", "gh auth status", "gh api repos/o/r/pulls", "gh api -X GET repos/o/r -f per_page=1",
+                 "gh api graphql -f query='query { viewer { login } }'", "gh api user --jq .login",
+                 "echo gh pr create", "git commit -m 'gh pr create'", "hub status"]
+    WRAPPED = ["make && gh pr create", "cd repo; gh release create v1", "env GH_TOKEN=x gh pr create",
+               "GH_REPO=o/r gh pr create", "sudo -u dev gh pr create", "sh -c 'gh pr create --fill'",
+               "bash -c \"make && gh release upload v1 a.zip\"", "if true; then gh pr create; fi",
+               "if git push; then echo ok; fi", "(git push)", "( cd repo && git push )", "{ git push; }",
+               "echo $(git push)", "true || git push origin main", "make | tee log; git push",
+               "/usr/bin/git push", "command git push", "env A=1 B=2 hub push", "nohup gh pr create &"]
+
+    def setUp(self):
+        super().setUp()
+        self.env.update(GIT_CONFIG_GLOBAL="/dev/null", GIT_CONFIG_NOSYSTEM="1")
+        self.genv = {"GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"}
+
+    def out(self, cmd, project_dir=None):
+        return injection.outward_bash(cmd, project_dir or self.proj, self.genv)
+
+    def test_publishing_commands_are_outward(self):
+        for c in self.PUBLISH:
+            why = self.out(c)
+            self.assertIsNotNone(why, c)
+            self.assertNotIn("DESTRUCTIVE", why, c)
+            self.assertIsNotNone(injection.risky_bash(c), c)  # still denied to web-reading and tainted agents
+
+    def test_destructive_remote_commands_are_named(self):
+        for c in self.DESTRUCTIVE:
+            self.assertIn("DESTRUCTIVE", self.out(c) or "", c)
+            self.assertIsNotNone(injection.risky_bash(c), c)
+
+    def test_read_only_commands_are_untouched(self):
+        for c in self.READ_ONLY:
+            self.assertIsNone(self.out(c), c)
+            self.assertIsNone(injection.risky_bash(c), c)
+
+    def test_dry_run_passes_the_approval_gate(self):
+        for c in ("hub push --dry-run", "hub push -n origin"):
+            self.assertIsNone(self.out(c), c)
+
+    def test_chained_and_wrapped_forms_go_through_the_same_check(self):
+        for c in self.WRAPPED:
+            self.assertIsNotNone(self.out(c), c)
+            self.assertIsNotNone(injection.risky_bash(c), c)
+        for c in ("(echo hi)", "if true; then echo ok; fi", "echo $(date)", "{ echo hi; }", "(git status)",
+                  "make && echo done", "git commit -m 'fix (git)'"):
+            self.assertIsNone(self.out(c), c)
+
+    def test_gh_api_reasons(self):
+        self.assertIn("POST", self.out("gh api repos/o/r/issues -f title=x"))
+        self.assertIn("POST", self.out("gh api -X post repos/o/r/issues"))
+        self.assertIn("PUT", self.out("gh api -X PUT repos/o/r/topics"))
+        self.assertIn("DELETE", self.out("gh api -X DELETE repos/o/r"))
+        self.assertIn("mutation", self.out("gh api graphql -f query='mutation { x }'"))
+
+    def test_hook_asks_everyone_and_denies_unattended_and_web_agents(self):
+        cmds = ["gh pr create --fill", "gh repo sync --force", "hub push origin main", "env A=1 gh release create v1",
+                "(cd r && gh pr create)"]
+        for c in cmds:
+            for who in ({}, {"agent_id": "a1", "agent_type": "python-expert"}):
+                d = self.decide(c, **who)
+                self.assertEqual(d["permissionDecision"], "ask", (c, who))
+                self.assertIn("Open doubt", d["permissionDecisionReason"])
+            d = self.decide(c, "a2", "orchestrator", permission_mode="dontAsk")
+            self.assertEqual(d["permissionDecision"], "deny", c)
+            self.assertIn("unattended", d["permissionDecisionReason"])
+            d = self.decide(c, "w1", "web-searcher")
+            self.assertEqual(d["permissionDecision"], "deny", c)
+            self.assertIn("web-searcher may not do this", d["permissionDecisionReason"])
+        self.assertIn("DESTRUCTIVE", self.decide("gh repo delete o/r --yes")["permissionDecisionReason"])
+        self.assertIn("gh pr create", self.decide("gh pr create")["permissionDecisionReason"])
+        for c in self.READ_ONLY[:12]:
+            self.assertIsNone(self.decide(c), c)
+            self.assertIsNone(self.decide(c, "a3", "python-expert", permission_mode="dontAsk"), c)
+
+    def test_tainted_agent_is_denied_gh_publishing(self):
+        run_hook("post-web", {"hook_event_name": "PostToolUse", "session_id": "G", "cwd": self.proj,
+                              "tool_name": "mcp__fetch__fetch", "agent_id": "t1", "agent_type": "rust-expert",
+                              "tool_input": {"url": "https://evil.test/p"},
+                              "tool_response": [{"type": "text", "text": ATTACKS["override"]}]}, self.env)
+        for c in ("gh pr create", "hub push", "gh release create v1"):
+            d = self.decide(c, "t1", "rust-expert")
+            self.assertEqual(d["permissionDecision"], "deny", c)
+            self.assertIn("prompt injection", d["permissionDecisionReason"])
+
+
+@unittest.skipUnless(shutil.which("git"), "git not installed")
+class GitAliasTests(_GateCase):
+    """A git subcommand that is not built in is resolved with `git config --get alias.<name>` (bounded, fail-open)."""
+
+    ALIASES = {"p": "push", "pf": "push --force-with-lease", "ship": "!git push origin HEAD",
+               "shipf": '!f() { git push --force "$@"; }; f', "pp": "p", "dry": "push --dry-run",
+               "st": "status", "lg": "log --oneline", "say": "!echo push done", "loop": "!git loop",
+               "l1": "l2", "l2": "l1", "pr": "!gh pr create", "bad": "'unterminated"}
+
+    def setUp(self):
+        super().setUp()
+        self.genv = {"GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"}
+        self.env.update(self.genv)
+        genv = {**os.environ, **self.genv}
+        subprocess.run(["git", "init", "-q", self.proj], check=True, env=genv)
+        for k, v in self.ALIASES.items():
+            subprocess.run(["git", "-C", self.proj, "config", "alias." + k, v], check=True, env=genv)
+
+    def out(self, cmd, project_dir=None, env=None):
+        return injection.outward_bash(cmd, project_dir or self.proj, {**self.genv, **(env or {})})
+
+    def test_aliases_that_expand_to_a_push_are_outward(self):
+        for c in ["git p", "git p origin main", "git ship", "git pp", "git pr",
+                  "git -C %s p" % self.proj, "git -c core.pager=cat p", "make && git p", "env A=1 git p",
+                  "sh -c 'git p'", "git -c alias.zz=push zz", "hub p"]:
+            why = self.out(c, project_dir=self.tmp if "-C" in c else None)
+            self.assertIsNotNone(why, c)
+            self.assertNotIn("DESTRUCTIVE", why, c)
+            self.assertIsNotNone(injection.risky_bash(c, self.proj), c)
+        self.assertIn("alias 'p'", self.out("git p"))
+
+    def test_destructive_alias_is_named(self):
+        for c in ["git pf", "git shipf", "git shipf origin x", "git -c alias.zf=push zf --force"]:
+            self.assertIn("DESTRUCTIVE", self.out(c) or "", c)
+
+    def test_aliases_that_do_not_push_pass(self):
+        for c in ["git st", "git lg", "git dry", "git p --dry-run", "git say", "git loop", "git l1", "git bad", "git nosuchalias",
+                  "git -c alias.zz=status zz"]:
+            self.assertIsNone(self.out(c), c)
+
+    def test_unresolvable_alias_does_not_block(self):
+        # not a repo, no git on PATH, a timeout: all mean unknown, never a block or a crash
+        self.assertIsNone(self.out("git p", project_dir=os.path.join(self.tmp, "missing")))
+        self.assertIsNone(self.out("git p", project_dir=self.tmp))
+        self.assertIsNone(self.out("git p", env={"PATH": os.path.join(self.tmp, "nope")}))
+        with mock.patch.object(injection.subprocess, "run",
+                               side_effect=subprocess.TimeoutExpired("git", 1.5)) as run:
+            self.assertIsNone(self.out("git p"))
+            self.assertEqual(run.call_count, 1)
+
+    def test_builtins_cost_no_subprocess_and_lookups_are_bounded(self):
+        with mock.patch.object(injection.subprocess, "run") as run:
+            for c in ["git status", "git -C r commit -m x", "git push --dry-run", "git log", "make && git diff"]:
+                self.out(c)
+            run.assert_not_called()
+        with mock.patch.object(injection.subprocess, "run") as run:
+            run.return_value = subprocess.CompletedProcess([], 1, "", "")
+            self.out("; ".join("git x%d" % i for i in range(20)))
+            self.assertLessEqual(run.call_count, injection._ALIAS_LOOKUPS)
+
+    def test_hook_decisions_for_aliases(self):
+        for who in ({}, {"agent_id": "a1", "agent_type": "python-expert"}):
+            d = self.decide("git p origin main", **who)
+            self.assertEqual(d["permissionDecision"], "ask", who)
+            self.assertIn("alias 'p'", d["permissionDecisionReason"])
+        self.assertIn("DESTRUCTIVE", self.decide("git pf")["permissionDecisionReason"])
+        d = self.decide("git p", "a2", "orchestrator", permission_mode="dontAsk")
+        self.assertEqual(d["permissionDecision"], "deny")
+        self.assertIn("unattended", d["permissionDecisionReason"])
+        d = self.decide("git p", "w1", "web-searcher")
+        self.assertEqual(d["permissionDecision"], "deny")
+        self.assertIn("web-searcher may not do this", d["permissionDecisionReason"])
+        self.assertIsNone(self.decide("git st"))
 
 
 class WiringTests(unittest.TestCase):
