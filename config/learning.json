@@ -64,8 +64,8 @@
         3000
       ],
       "effort": [
-        "medium",
-        "max"
+        "high",
+        "high"
       ]
     },
     "orchestrator": {
