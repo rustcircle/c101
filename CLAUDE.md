@@ -27,3 +27,6 @@ This repository *is* a Claude Code configuration: 64 subagents (`.claude/agents/
 - Git: work on a branch or worktree, then merge it back into `main` as soon as the task, fix or correction
   is finished (fast-forward when possible) and delete the merged branch. Never push unless the user asks
   Claude to push in that conversation; a push request covers only that push.
+  The pre-tool hook then asks the user to approve the exact `git push`, subagents included; force,
+  delete and mirror pushes need an explicit request for them, and unattended runs (`bin/stack-sdk run`)
+  report the push as an Open doubt instead.

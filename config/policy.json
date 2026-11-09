@@ -189,7 +189,7 @@
     "fold_tiers": ["low"]
   },
   "outward_actions": {
-    "_doc": "Pre-tool hook (stack/injection.py outward_bash): every agent, the main thread included, must get the user's approval for Bash commands that write to a container registry (push, login, cosign signing, skopeo/crane/oras copies, --push builds) or change a Kubernetes cluster whose context does not match local_kube_contexts. kubectl/helm calls whose kubeconfig lives under .stack/ (run-owned kind clusters) count as local. Mirrors the container-craft skill's safety model.",
+    "_doc": "Pre-tool hook (stack/injection.py outward_bash): every agent, the main thread included, must get the user's approval for Bash commands that push to a git remote (force/delete/mirror/prune pushes named destructive; dry runs pass; denied under dontAsk), write to a container registry (push, login, cosign signing, skopeo/crane/oras copies, --push builds) or change a Kubernetes cluster whose context does not match local_kube_contexts. kubectl/helm calls whose kubeconfig lives under .stack/ (run-owned kind clusters) count as local. Mirrors the container-craft skill's safety model.",
     "enabled": true,
     "local_kube_contexts": ["kind-*", "k3d-*", "minikube", "docker-desktop", "rancher-desktop", "orbstack"]
   },
