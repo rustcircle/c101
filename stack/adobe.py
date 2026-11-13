@@ -5,7 +5,7 @@ Everything lands under ~/.claude/stack-data/adobe/ (the paths the config/mcp.opt
   photoshop      clone mikechambers/adb-mcp at a pinned commit, `npm install` its socket proxy, run the proxy
                  (ws://localhost:3001) as the LaunchAgent com.c101.adb-proxy, pre-fetch the server's uv deps
   after-effects  clone Dakkshin/after-effects-mcp at a pinned commit, npm install + build, copy its
-                 mcp-bridge-auto.jsx into <After Effects>/Scripts/ScriptUI Panels (install-bridge.js)
+                 mcp-bridge-auto.jsx into <After Effects>/Scripts/ScriptUI Panels (direct copy, sudo cp fallback)
   indesign       reuse the adb-mcp clone and proxy (as photoshop), pre-fetch the server's uv deps, and remove the
                  old com.c101.indesign-bridge LaunchAgent if an earlier install left one
   premiere-pro   npm-install premiere-pro-mcp (pinned) and install its signed CEP panel
@@ -233,9 +233,17 @@ def setup_after_effects(ctx) -> None:
                        "mcp-bridge-auto.jsx")
     if not ctx.dry and _same_file(src, dst):
         return
-    # install-bridge.js copies into the newest AE's ScriptUI Panels and falls back to an interactive `sudo cp`.
-    ctx.do("copy mcp-bridge-auto.jsx into After Effects' ScriptUI Panels (may ask for your password)",
-           lambda: _run(["node", "install-bridge.js"], cwd=d, interactive=True))
+    # Copy it ourselves: upstream install-bridge.js only knows a hardcoded list of AE years (2021-2026) and fails
+    # on newer installs. The folder is usually root-owned, so fall back to an interactive `sudo cp`.
+    ctx.do("copy mcp-bridge-auto.jsx into %s (may ask for your password)" % os.path.dirname(dst),
+           lambda: _copy_privileged(src, dst))
+
+
+def _copy_privileged(src: str, dst: str) -> None:
+    try:
+        shutil.copyfile(src, dst)
+    except PermissionError:
+        _run(["sudo", "cp", src, dst], interactive=True)
 
 
 def setup_indesign(ctx) -> None:
